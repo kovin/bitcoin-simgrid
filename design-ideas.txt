@@ -1,0 +1,176 @@
+Bitcoin Simgrid
+
+Para que el bloque sea aceptado:
+ - se tuvo que haber construido sobre el ultimo bloque o es una nueva "best chain"
+ - el hash del bloque tiene que ser menor al target actual requerido por la red
+en particular: https://en.bitcoin.it/wiki/Protocol_rules#.22block.22_messages
+todos los inputs referenciados por dicho bloque son parte del utxo hasta ese momento, los outputs del bloque se convierten en parte del nuevo utxo y quitamos los anteriores
+
+Cada bloque tiene transacciones
+La primera transaccion indica como gasta los BTS otorgados por la red + los fees de las transacciones incluidas en el bloque
+Una transaccion tiene inputs y outputs
+Los inputs referencian "outpoints" que son output + indice relativo dentro de la transaccion no inluida en otro bloque previamente
+Los outputs de una transaccion no pueden superar los satoshis de sus inputs
+
+Por cada bloque hay limites:
+ - de tamaño: 1MB
+ - de sigops (signature operations): 20.000
+
+
+Estructuras que necesito en cada nodo
+tx_mempool: unconfirmed transactions <tdix, bool?>
+known_txs: set <txid, tx> de transsaciones conocidas
+known_blocks: set de bloques que conocemos (sean parte de la best chain o no) <block_id, <block, dificultad agregada>>
+blockchain_top: <block_id>
+utxo_set: set <tx_id, boolean(?)> representa el estado de outputs no gastados empezando por el bloque genesis y llegando hasta al bloque referenciado por blockchain_top (tal vez no sea necesario modelarlo si asumimos buena fe)
+ tal vez tenga que referenciar utxo points, o sea <(tx_id, outpoint), boolean?>
+cada bloque y transaccion son mensajes
+los mensajes tienen ids unicos, un tipo, el id del nodo que los creo y una forma de consultar su tamaño
+
+cada bloque tiene ademas el conjunto de transacciones que incluye (referencias a las mismas), asi como la dificultad y el bloque anterior al que referencia
+
+Que necesito validar en SimGrid ?
+Los nodos mineros van a generar un bloque aleatoriamente y comunicarselo a sus peers
+Los nodos normales van a recibir dicho bloque, validarlo internamente y hacer las modificaciones necesarias en tx_mempool, blockchain, blockchain_top y utxo_set
+Los nodos normales van a generar transacciones aleatoriamente, agregarlas a known_txs, tx_mempool y comunicarlas a sus peers
+
+Si recibo un bloque:
+ - agrego las transacciones que no conozco a known_txs
+ - agrego el bloque a known_blocks
+ - si construye desde blockchain_top:
+    verifico que no haya una transaccion incluida en un bloque previamente (que sus outputs esten en utxo_set)
+    quito los outputs utilizados desde utxo_set
+    agrega los nuevos outputs a utxo_set
+    cambio blockchain_top para referenciar el id del nuevo bloque
+    quito las txs utilizadas de tx_mempool
+ - si construye desde otro bloque y tiene una dificultad agregada mayor:
+    - construyo un utxo set paralelo:
+        quitando de utxo_set los outpus que vi desde el child del fork de la cadena original hasta el blockchain_top
+        agregando a utxo_set los output que vi desde el child del fork de la nueva cadena hasta el blockchain_top
+    - si el bloque nuevo tiene transacciones validas con respecto a este nuevo utxo_set paralelo: (tal vez este chequeo no es necesario si asumimos que los nodos no van a tratar de referenciar un output ya utilizado)
+     - lo dejo como nuevo blockchain_top
+     - sino lo remuevo de known_blocks
+    En casos exitosos para ambas situaciones: quito las txs de utxo_set
+
+Si recibo una transaccion:
+ - Si la misma no esta en known_txs la agrego asi como a tx_mempool (tal vez con manejarme solo con knwon_txs y que el booleano indique si la misma esta confirmada alcance)
+
+Tengo que hacer el experimento cambiando el deployment file para que los nodos solo contacten a sus peers de la topologia (o consultarlo a simgrid)
+
+
+====================================
+Detailed block validation
+These messages hold a single block.
+
+    Check syntactic correctness
+    Reject if duplicate of block we have in any of the three categories
+    Transaction list must be non-empty
+    Block hash must satisfy claimed nBits proof of work
+    Block timestamp must not be more than two hours in the future
+    First transaction must be coinbase (i.e. only 1 input, with hash=0, n=-1), the rest must not be
+    For each transaction, apply "tx" checks 2-4
+    For the coinbase (first) transaction, scriptSig length must be 2-100
+    Reject if sum of transaction sig opcounts > MAX_BLOCK_SIGOPS
+    Verify Merkle hash
+    Check if prev block (matching prev hash) is in main branch or side branches. If not, add this to orphan blocks, then query peer we got this from for 1st missing orphan block in prev chain; done with block
+    Check that nBits value matches the difficulty rules
+    Reject if timestamp is the median time of the last 11 blocks or before
+    For certain old blocks (i.e. on initial block download) check that hash matches known values
+    Add block into the tree. There are three cases: 1. block further extends the main branch; 2. block extends a side branch but does not add enough difficulty to make it become the new main branch; 3. block extends a side branch and makes it the new main branch.
+    For case 1, adding to main branch:
+        For all but the coinbase transaction, apply the following:
+            For each input, look in the main branch to find the referenced output transaction. Reject if the output transaction is missing for any input.
+            For each input, if we are using the nth output of the earlier transaction, but it has fewer than n+1 outputs, reject.
+            For each input, if the referenced output transaction is coinbase (i.e. only 1 input, with hash=0, n=-1), it must have at least COINBASE_MATURITY (100) confirmations; else reject.
+            Verify crypto signatures for each input; reject if any are bad
+            For each input, if the referenced output has already been spent by a transaction in the main branch, reject
+            Using the referenced output transactions to get input values, check that each input value, as well as the sum, are in legal money range
+            Reject if the sum of input values < sum of output values
+        Reject if coinbase value > sum of block creation fee and transaction fees
+        (If we have not rejected):
+        For each transaction, "Add to wallet if mine"
+        For each transaction in the block, delete any matching transaction from the transaction pool
+        Relay block to our peers
+        If we rejected, the block is not counted as part of the main branch
+    For case 2, adding to a side branch, we don't do anything.
+    For case 3, a side branch becoming the main branch:
+        Find the fork block on the main branch which this side branch forks off of
+        Redefine the main branch to only go up to this fork block
+        For each block on the side branch, from the child of the fork block to the leaf, add to the main branch:
+            Do "branch" checks 3-11
+            For all but the coinbase transaction, apply the following:
+                For each input, look in the main branch to find the referenced output transaction. Reject if the output transaction is missing for any input.
+                For each input, if we are using the nth output of the earlier transaction, but it has fewer than n+1 outputs, reject.
+                For each input, if the referenced output transaction is coinbase (i.e. only 1 input, with hash=0, n=-1), it must have at least COINBASE_MATURITY (100) confirmations; else reject.
+                Verify crypto signatures for each input; reject if any are bad
+                For each input, if the referenced output has already been spent by a transaction in the main branch, reject
+                Using the referenced output transactions to get input values, check that each input value, as well as the sum, are in legal money range
+                Reject if the sum of input values < sum of output values
+            Reject if coinbase value > sum of block creation fee and transaction fees
+            (If we have not rejected):
+            For each transaction, "Add to wallet if mine"
+        If we reject at any point, leave the main branch as what it was originally, done with block
+        For each block in the old main branch, from the leaf down to the child of the fork block:
+            For each non-coinbase transaction in the block:
+                Apply "tx" checks 2-9, except in step 8, only look in the transaction pool for duplicates, not the main branch
+                Add to transaction pool if accepted, else go on to next transaction
+        For each block in the new main branch, from the child of the fork node to the leaf:
+            For each transaction in the block, delete any matching transaction from the transaction pool
+        Relay block to our peers
+    For each orphan block for which this block is its prev, run all these steps (including this one) recursively on that orphan
+
+
+=================================================
+Detailed transaction rules
+
+"tx" messages
+
+These messages hold a single transaction.
+
+    Check syntactic correctness
+    Make sure neither in or out lists are empty
+    Size in bytes <= MAX_BLOCK_SIZE
+    Each output value, as well as the total, must be in legal money range
+    Make sure none of the inputs have hash=0, n=-1 (coinbase transactions)
+    Check that nLockTime <= INT_MAX[1], size in bytes >= 100[2], and sig opcount <= 2[3]
+    Reject "nonstandard" transactions: scriptSig doing anything other than pushing numbers on the stack, or scriptPubkey not matching the two usual forms[4]
+    Reject if we already have matching tx in the pool, or in a block in the main branch
+    For each input, if the referenced output exists in any other tx in the pool, reject this transaction.[5]
+    For each input, look in the main branch and the transaction pool to find the referenced output transaction. If the output transaction is missing for any input, this will be an orphan transaction. Add to the orphan transactions, if a matching transaction is not in there already.
+    For each input, if the referenced output transaction is coinbase (i.e. only 1 input, with hash=0, n=-1), it must have at least COINBASE_MATURITY (100) confirmations; else reject this transaction
+    For each input, if the referenced output does not exist (e.g. never existed or has already been spent), reject this transaction[6]
+    Using the referenced output transactions to get input values, check that each input value, as well as the sum, are in legal money range
+    Reject if the sum of input values < sum of output values
+    Reject if transaction fee (defined as sum of input values minus sum of output values) would be too low to get into an empty block
+    Verify the scriptPubKey accepts for each input; reject if any are bad
+    Add to transaction pool[7]
+    "Add to wallet if mine"
+    Relay transaction to peers
+    For each orphan transaction that uses this one as one of its inputs, run all these steps (including this one) recursively on that orphan
+
+
+
+https://bitcoin.stackexchange.com/a/3277
+
+ThreadmoduleessageHandler2() calls SendMessages() every 100 seconds, which causes inv messages to be sent to the client's peers.
+
+One peer is picked at random to receive inv messages which reference all the pending transactions that we know about and it doesn't, including the ones we created ourselves. The rest of the peers receive a inv messages which only reference around 25% of the pending transactions that we know about and they don't, not including any of the ones we created.
+
+A comment in the code explains that this "trickling" of transaction inventory is to protect privacy.
+
+Edit: I just noticed this thread[1] which also describes the process of advertising transactions. Luckily it agrees with my description here.
+
+[1] https://bitcointalk.org/index.php?topic=41730.0
+
+Node loop
+por cada nodo => pedir los mensajes que nos hayan dejado
+fijarse si le tenemos que enviar las txs de las que tenemos conocimiento
+dormir 100 milisegundos
+
+
+-------------------------------------------
+
+blockchain_data {
+    known_blocks: <<rand-id>, 1000>, <<rand-id>, 2000>, <<rand-id>, 3000>, <<rand-id>, 4000>,
+    utxo: <<rand-txid>, <0, 1, 2, 3>>, <<rand-txid>, <0, 1, 2>>, <<rand-txid>, <0, 1>>
+}
