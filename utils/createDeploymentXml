@@ -1,0 +1,40 @@
+#!/usr/bin/python
+
+import lxml.etree as et
+import argparse
+from tempfile import NamedTemporaryFile
+import os
+import re
+
+parser = argparse.ArgumentParser(description = 'Create a platform xml for the bitcoin-simgrid project')
+parser.add_argument('--file', type = str, help = 'the name of the produced xml', required = True)
+parser.add_argument('--nodes_count', type = int, help = 'the number of nodes involved in the simulation', required = True)
+
+args = parser.parse_args()
+
+root = et.Element('platform')
+root.set('version', '4.1')
+
+for i in range(0, args.nodes_count):
+    node = et.Element('actor')
+    node.set('host', 'node-' + str(i))
+    node.set('function', 'node')
+    node_id_argument = et.Element('argument')
+    node_id_argument.set('value', str(i))
+    node_total_count_argument = et.Element('argument')
+    node_total_count_argument.set('value', str(args.nodes_count))
+    node_peers_argument = et.Element('argument')
+    node_peers_argument.set('value', '3 5')
+    node.append(node_id_argument)
+    node.append(node_total_count_argument)
+    node.append(node_peers_argument)
+    root.append(node)
+
+monitor = et.Element('actor')
+monitor.set('host', 'node-' + args.nodes_count)
+monitor.set('function', 'monitor')
+root.append(monitor)
+
+tree = et.ElementTree(root)
+tree.docinfo.system_url = 'http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd'
+tree.write(args.file, xml_declaration = True, encoding = "utf-8")
