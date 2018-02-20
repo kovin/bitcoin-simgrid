@@ -18,7 +18,7 @@ bitcoin-simgrid$ make bitcoin-simgrid
 
 ## Run
 ```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/exponential_100_nodes_.5_alpha.xml platform/small_deployment.xml platform/blockchain_data.json
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment.xml platform/default_blockchain_data.json
 ```
 
 # Topology generation
