@@ -139,8 +139,11 @@ void Node::handle_new_transaction(Transaction *transaction)
 
 void Node::handle_new_block(Block *block)
 {
-  if (blockchain.find(block->id) == blockchain.end()) {
-    blockchain.insert(block->id);
+  try {
+    known_blocks.at(block->id);
+  } catch (const std::out_of_range& oor) {
+    long previous_difficulty = known_blocks[blockchain_top];
+    known_blocks[block->id] = block->difficulty + previous_difficulty;
     long pre_size = compute_mempool_size();
     mempool = DiffMaps(mempool, block->transactions);
     long post_size = compute_mempool_size() + block->size;

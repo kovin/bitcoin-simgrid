@@ -36,11 +36,10 @@ public:
 protected:
   int my_id;
   double messages_to_send = 90;// FIXME: remove this
-  std::set<long> blockchain;// FIXME: remove this
   std::map<long, Transaction> mempool;// map of unconfirmed transactions: <txid, tx>
   std::map<long, std::set<long>> utxo;// map of <txid, [o0, ..., on]> where oi is an unspent oupoint corresponding to the tx with id txid
-  long blockchain_top;// The block id corresponding to the top of the best chain so far
-  std::map<long, long> known_blocks;// map of blocks we know about: <block-id, aggregated difficulty>
+  long blockchain_top = 0;// The block id corresponding to the top of the best chain so far // FIXME: take this from json bootstrap data
+  std::map<long, long> known_blocks = {{0, 100}};// map of blocks we know about: <block-id, aggregated difficulty>
 
   void create_and_send_message_if_needed();
   Message* get_message_to_send();

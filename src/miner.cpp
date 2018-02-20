@@ -12,13 +12,16 @@ void Miner::create_and_send_message_if_needed()
 
 Message* Miner::get_message_to_send()
 {
-  Message* message = new Block(my_id, mempool);
+  Block* block = new Block(my_id, blockchain_top, mempool);
+  long previous_difficulty = known_blocks[blockchain_top];
+  known_blocks[block->id] = block->difficulty + previous_difficulty;
+  blockchain_top = block->id;
   long pre_size = compute_mempool_size();
   mempool = std::map<long, Transaction>();
   long post_size = compute_mempool_size();
-  total_bytes_received += (post_size - pre_size + message->size);
-  network_bytes_produced += (post_size - pre_size + message->size);
-  return message;
+  total_bytes_received += (post_size - pre_size + block->size);
+  network_bytes_produced += (post_size - pre_size + block->size);
+  return block;
 }
 
 void Miner::handle_new_transaction(Transaction *transaction)
