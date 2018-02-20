@@ -1,10 +1,12 @@
 #include "aux-functions.hpp"
 
-long lrand()
+long lrand(long limit)
 {
+  long result;
   if (sizeof(int) < sizeof(long)) {
-      return (static_cast<long>(rand()) << (sizeof(int) * 8)) | rand();
+    result = (static_cast<long>(rand()) << (sizeof(int) * 8)) | rand();
   } else {
-    return rand();
+    result = rand();
   }
+  return limit ? result % limit : result;
 }
