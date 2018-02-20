@@ -17,7 +17,6 @@ std::vector<std::string> split(const std::string &s, char delim)
     split(s, delim, std::back_inserter(elems));
     return elems;
 }
-// </prueba>
 
 XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
 
