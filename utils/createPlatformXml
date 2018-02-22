@@ -12,13 +12,12 @@ CustomEnumType = enum.Enum("CustomEnumType", ("Full", "Dijkstra", "DijkstraCache
 
 parser = argparse.ArgumentParser(description = 'Create a platform xml file which will be compliant with SimGrid 4.1')
 parser.add_argument('--file', type = str, help = 'the file where to store the produdeced xml', required = True)
-parser.add_argument('--nodes', type = int, help = 'Number of nodes', required = True)
-parser.add_argument('--edges', type = int, help = 'Number of edges to attach from a new node to existing nodes', required = True)
-parser.add_argument('--seed', type = int, help = 'Seed for random number generato', required = False)
+parser.add_argument('--hosts_count', type = int, help = 'Number of hosts in the platform', required = True)
+parser.add_argument('--edges', type = int, help = 'Number of edges to attach from a new host to an existing host', required = True)
+parser.add_argument('--seed', type = int, help = 'Seed for networkx graph generator', required = False)
 parser.add_argument("--routing", type = str, action = "store", choices = tuple(t.name for t in CustomEnumType), default = CustomEnumType.Full.name)
 
 args = parser.parse_args()
-
 
 def get_xml_header():
     return '<?xml version="1.0" encoding="UTF-8"?>'
@@ -42,7 +41,7 @@ def add_route_between_hosts(G, zone, origin, destiny):
         route.append(link_ctn)
 
 def add_zone_nodes(zone):
-    G = nx.barabasi_albert_graph(args.nodes, args.edges, args.seed)
+    G = nx.barabasi_albert_graph(args.hosts_count, args.edges, args.seed)
     for n in G.nodes():
         host = et.Element('host')
         host.set('id', 'node-%s' % n)
@@ -59,8 +58,8 @@ def add_zone_nodes(zone):
         zone.append(link)
         edge_number += 1
     if CustomEnumType.Full.name == args.routing:
-        for origin in range(0, args.nodes):
-            for destiny in range(origin + 1, args.nodes):
+        for origin in range(0, args.hosts_count):
+            for destiny in range(origin + 1, args.hosts_count):
                 add_route_between_hosts(G, zone, origin, destiny)
                 add_route_between_hosts(G, zone, destiny, origin)
     else:
