@@ -64,7 +64,7 @@ def add_zone_nodes(zone):
                 add_route_between_hosts(G, zone, origin, destiny)
                 add_route_between_hosts(G, zone, destiny, origin)
     else:
-        for e in G.edges:
+        for e in G.edges():
             (origin, destiny) = e
             add_route_between_hosts(G, zone, origin, destiny)
             add_route_between_hosts(G, zone, destiny, origin)
