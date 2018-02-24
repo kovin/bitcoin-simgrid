@@ -47,17 +47,21 @@ void Node::operator()()
     receive();
     create_and_send_message_if_needed();
   }
-  while (simgrid::s4u::Engine::getClock() < 1000) {
-    receive();
+  wait_for_other_before_shutdown();
+}
+
+void Node::wait_for_other_before_shutdown()
+{
+  while (!my_mailbox->empty()) {
+    while (!my_mailbox->empty()) {
+      receive();
+    }
     simgrid::s4u::this_actor::sleep_for(1);
   }
-  /*XBT_INFO(
-    "\nStats\n"
-    "\ttotal bytes received:\t%d\n"
-    "\ttotal network bytes produced:\t%d",
-    total_bytes_received, network_bytes_produced
-  );*/
   active_nodes--;
+  while (active_nodes > 0) {
+    simgrid::s4u::this_actor::sleep_for(1);
+  }
 }
 
 void Node::create_and_send_message_if_needed()

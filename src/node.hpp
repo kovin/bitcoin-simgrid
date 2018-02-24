@@ -54,6 +54,7 @@ private:
   void notify_unconfirmed_transactions_if_needed();
   void receive();
   simgrid::s4u::MailboxPtr get_peer_mailbox(int peer_id);
+  void wait_for_other_before_shutdown();
 };
 
 #endif /* NODE_HPP */
