@@ -13,12 +13,19 @@ simgrid$ sudo make install
 ## Build
 ```bash
 bitcoin-simgrid$ cmake .
-bitcoin-simgrid$ make bitcoin-simgrid
+bitcoin-simgrid$ make
 ```
 
 ## Run
+### Without full logging
 ```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment.xml platform/default_blockchain_data.json
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment.xml platform/default_blockchain_data.json --log="root.fmt:%m"
+
+```
+### With debug logging
+```bash
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment.xml platform/default_blockchain_data.json --log="root.fmt:%m%n" --log=root.threshold:debug
+
 ```
 
 # Topology generation
@@ -37,5 +44,5 @@ bitcoin-simgrid$ utils/createPlatformXml --file=platform/300_nodes_dijkstracache
 
 # Deployment generation
 ```bash
-bitcoin-simgrid$ utils/createDeploymentXml --file=platform/300_nodes_deployment.xml --nodes_count=300 --peers_count=8
+bitcoin-simgrid$ utils/createDeploymentXml --file=platform/100_nodes_deployment.xml --nodes_count=100 --peers_count=8
 ```
