@@ -25,7 +25,6 @@ class Node : public BaseNode
   std::vector<int> my_peers;
   simgrid::s4u::CommPtr comm_received = nullptr;
   simgrid::s4u::MailboxPtr my_mailbox;
-  bool disconnect_notified = false;
 
 public:
   explicit Node(std::vector<std::string> args);
