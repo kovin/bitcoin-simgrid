@@ -22,7 +22,8 @@ root.set('version', '4.1')
 def get_peers(node_id):
     possible_peers = range(0, args.nodes_count)
     random.shuffle(possible_peers)
-    peers = [str(peer_id) for peer_id in possible_peers[:args.peers_count] if peer_id != node_id]
+    peers = []
+    peers = [str(peer_id) for peer_id in possible_peers[:(args.peers_count + 1)] if peer_id != node_id and len(peers) < args.peers_count]
     return ' '.join(peers)
 
 def add_nodes(root):
