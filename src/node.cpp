@@ -47,15 +47,14 @@ void Node::operator()()
     receive();
     create_and_send_message_if_needed();
   }
+  shutting_down = true;
   wait_for_other_before_shutdown();
 }
 
 void Node::wait_for_other_before_shutdown()
 {
   while (!my_mailbox->empty()) {
-    while (!my_mailbox->empty()) {
-      receive();
-    }
+    receive();
     simgrid::s4u::this_actor::sleep_for(1);
   }
   active_nodes--;
@@ -72,14 +71,6 @@ void Node::create_and_send_message_if_needed()
   }
 }
 
-void Node::notify_unconfirmed_transactions_if_needed()
-{
-  if ((rand() % 100) < 25) {
-    Message *payload = new UnconfirmedTransactions(my_id, mempool);
-    send_message_to_peers(payload);
-  }
-}
-
 /*
 TODO: no enviar a todos los peers
 solo enviar a 1 peer todas las transacciones que conozcamos
@@ -89,8 +80,7 @@ void Node::send_message_to_peers(Message* payload)
 {
   std::vector<int>::iterator it_id;
   for(it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
-      int peer_index_to_contact = *it_id;
-      int peer_id = (peer_index_to_contact + my_id) % peers_count;
+      int peer_id = *it_id;
       simgrid::s4u::MailboxPtr mbox = get_peer_mailbox(peer_id);
       mbox->put_async(payload, msg_size + payload->size);
   }
@@ -107,7 +97,10 @@ Message* Node::get_message_to_send()
 
 void Node::receive()
 {
-  if (!my_mailbox->empty()) {
+  if (my_mailbox->empty()) {
+    return;
+  }
+  while (!my_mailbox->empty()) {
     void* data = my_mailbox->get();
     Message *payload = static_cast<Message*>(data);
     comm_received = nullptr;
@@ -124,7 +117,18 @@ void Node::receive()
       default:
         THROW_IMPOSSIBLE;
     }
-    notify_unconfirmed_transactions_if_needed();
+  }
+  notify_unconfirmed_transactions_if_needed();
+}
+
+void Node::notify_unconfirmed_transactions_if_needed()
+{
+  if (shutting_down) {
+    return;
+  }
+  if ((rand() % 100) < 25) {
+    Message *payload = new UnconfirmedTransactions(my_id, mempool);
+    send_message_to_peers(payload);
   }
 }
 

@@ -35,7 +35,7 @@ public:
 
 protected:
   int my_id;
-  double messages_to_send = 90;// FIXME: remove this
+  double messages_to_send = 20;// FIXME: remove this
   std::map<long, Transaction> mempool;// map of unconfirmed transactions: <txid, tx>
   std::map<long, std::set<long>> utxo;// map of <txid, [o0, ..., on]> where oi is an unspent oupoint corresponding to the tx with id txid
   long blockchain_top = 0;// The block id corresponding to the top of the best chain so far // FIXME: take this from json bootstrap data
@@ -51,8 +51,9 @@ protected:
   void send_message_to_peers(Message* payload);
 
 private:
-  void notify_unconfirmed_transactions_if_needed();
+  bool shutting_down = false;
   void receive();
+  void notify_unconfirmed_transactions_if_needed();
   simgrid::s4u::MailboxPtr get_peer_mailbox(int peer_id);
   void wait_for_other_before_shutdown();
 };
