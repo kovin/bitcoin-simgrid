@@ -2,12 +2,18 @@
 
 ## Prerequisites
 ```bash
-$ sudo apt-get install libboost-all-dev cmake valgrind python-networkx git
+$ sudo apt-get install doxygen libboost-all-dev cmake valgrind python-networkx git
 $ git clone git://scm.gforge.inria.fr/simgrid/simgrid.git simgrid
 $ cd simgrid
 simgrid$ cmake -DCMAKE_INSTALL_PREFIX=/opt/simgrid .
 simgrid$ make
 simgrid$ sudo make install
+```
+
+## Clone
+```bash
+$ git clone git@github.com:kovin/bitcoin-simgrid.git
+$ cd bitcoin-simgrid
 ```
 
 ## Build
