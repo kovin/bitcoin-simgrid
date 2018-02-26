@@ -84,6 +84,7 @@ void Node::send_message_to_peers(Message* payload)
   std::vector<int>::iterator it_id;
   for(it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
       int peer_id = *it_id;
+      XBT_DEBUG("sending %s to %d", payload->get_type_name().c_str(), peer_id);
       simgrid::s4u::MailboxPtr mbox = get_peer_mailbox(peer_id);
       mbox->put_async(payload, msg_size + payload->size);
   }
@@ -107,6 +108,7 @@ void Node::receive()
     messages_received++;
     void* data = my_mailbox->get();
     Message *payload = static_cast<Message*>(data);
+    XBT_DEBUG("received %s from %d", payload->get_type_name().c_str(), payload->peer_id);
     comm_received = nullptr;
     switch (payload->get_type()) {
       case MESSAGE_TRANSACTION:
