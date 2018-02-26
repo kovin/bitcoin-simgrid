@@ -1,0 +1,63 @@
+#!/usr/bin/python
+
+import urllib2
+import lxml.etree as et
+import json
+import pprint
+from tempfile import NamedTemporaryFile
+import os
+
+# check:
+#    ~/exactas/simgrid/examples/platforms/bypassRoute.xml
+#    ~/exactas/simgrid/examples/platforms/vivaldi.xml
+
+user_agent = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'
+headers = {'User-Agent': user_agent}
+url = 'https://bitnodes.earn.com/api/v1/snapshots/latest/?field=coordinates'
+req = urllib2.Request(url, None, headers)
+response = urllib2.urlopen(req)
+json_data = response.read()
+data = json.loads(json_data)
+coordinates = data['coordinates']
+#pprint.pprint(coordinates)
+#root = et.XML(xml)
+#print(et.tostring(root, pretty_print=True, encoding='unicode'))
+
+
+def get_xml_header():
+    return '<?xml version="1.0" encoding="UTF-8"?>'
+
+def get_doctype_header():
+    return '<!DOCTYPE platform SYSTEM "http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd">'
+
+def add_zone_nodes(zone):
+    for n in range(0, 300):
+        host = et.Element('host')
+        host.set('id', 'node-%s' % n)
+        host.set('speed', '1Gf')
+        host_latitude_longitude = (coordinates[n][0], coordinates[n][1])
+        host.set('coordinates', '%s %s 0' % host_latitude_longitude)
+        zone.append(host)
+        edge_number = 0
+
+def getTempFilenameWithXmlAndDoctypeHeaders():
+    headers = '%s\n%s\n<platform version="4.1"></platform>\n' % (get_xml_header(), get_doctype_header())
+    f = NamedTemporaryFile(delete=False)
+    f.write(headers)
+    f.close()
+    return f.name
+
+def generate_platform():
+    tempFilename = getTempFilenameWithXmlAndDoctypeHeaders()
+    tree = et.parse(tempFilename)
+    root = tree.getroot()
+    zone = et.Element('zone')
+    zone.set('id', 'AS0')
+    zone.set('routing', 'Vivaldi')
+    add_zone_nodes(zone)
+    root.append(zone)
+    tree.write('veamos.xml', xml_declaration=True, encoding="utf-8")
+    os.unlink(tempFilename)
+
+
+generate_platform()
