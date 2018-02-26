@@ -8,7 +8,7 @@ using json = nlohmann::json;
 
 XBT_LOG_NEW_DEFAULT_CATEGORY(bitcoin_simgrid, "Messages specific for this msg example");
 
-int blockchain_data = 10;
+//int blockchain_data = 10;
 
 int main(int argc, char *argv[])
 {
@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 
   xbt_assert((argc - 1) == 3, "Usage: %s platform_file deployment_file blockchain_data", argv[0]);
   srand(1);
-blockchain_data = 1000;
+//blockchain_data = 1000;
   e.registerFunction<Node>("node");
   e.registerFunction<Miner>("miner");
   e.registerFunction<Monitor>("monitor");
@@ -25,7 +25,7 @@ blockchain_data = 1000;
   e.loadDeployment(argv[2]);
   e.run();
 
-json j2 = {
+/*json j2 = {
   {"pi", 3.141},
   {"happy", true},
   {"name", "Niels"},
@@ -51,6 +51,6 @@ json j2 = {
   o << std::setw(4) << j << std::endl;
 
   XBT_INFO("something: %d\n", j2["answer"]["everything"].get<int>());
-
+*/
   return 0;
 }
