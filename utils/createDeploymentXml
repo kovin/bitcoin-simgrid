@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser(description = 'Create a platform xml for the bi
 parser.add_argument('--file', type = str, help = 'the name of the produced xml', required = True)
 parser.add_argument('--nodes_count', type = int, help = 'the number of nodes involved in the simulation', required = True)
 parser.add_argument('--peers_count', type = int, help = 'the number of peers each node will have', required = True)
+parser.add_argument('--miners_ratio', type = int, help = 'a number between 0 an 100 for the ratio of miner in relation to nodes_count', required = False, default = 5)
 parser.add_argument('--seed', type = int, help = 'Seed for random module', required = False)
 
 args = parser.parse_args()
@@ -30,7 +31,8 @@ def add_nodes(root):
     for node_id in range(0, args.nodes_count):
         node = et.Element('actor')
         node.set('host', 'node-' + str(node_id))
-        node.set('function', 'node')
+        node_type = 'miner' if ((int) (random.random() * 101)) <= args.miners_ratio else 'node'
+        node.set('function', node_type)
         node_id_argument = et.Element('argument')
         node_id_argument.set('value', str(node_id))
         node_total_count_argument = et.Element('argument')
