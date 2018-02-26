@@ -21,6 +21,8 @@ std::vector<std::string> split(const std::string &s, char delim)
 XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
 
 int Node::active_nodes = 0;
+int Node::messages_produced = 0;
+int Node::messages_received = 0;
 long Node::network_bytes_produced = 0;
 
 Node::Node(std::vector<std::string> args)
@@ -68,6 +70,7 @@ void Node::create_and_send_message_if_needed()
   if ((messages_to_send > 0) && ((rand() % 100) < 75)) {
     send_message_to_peers(get_message_to_send());
     messages_to_send--;
+    messages_produced++;
   }
 }
 
@@ -101,6 +104,7 @@ void Node::receive()
     return;
   }
   while (!my_mailbox->empty()) {
+    messages_received++;
     void* data = my_mailbox->get();
     Message *payload = static_cast<Message*>(data);
     comm_received = nullptr;
