@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import networkx as nx
 import lxml.etree as et
 import argparse
 from tempfile import NamedTemporaryFile
@@ -20,15 +21,9 @@ random.seed(args.seed)
 root = et.Element('platform')
 root.set('version', '4.1')
 
-def get_peers(node_id):
-    possible_peers = range(0, args.nodes_count)
-    random.shuffle(possible_peers)
-    peers = []
-    peers = [str(peer_id) for peer_id in possible_peers[:(args.peers_count + 1)] if peer_id != node_id and len(peers) < args.peers_count]
-    return ' '.join(peers)
-
 def add_nodes(root):
-    for node_id in range(0, args.nodes_count):
+    G = nx.connected_watts_strogatz_graph(args.nodes_count, args.peers_count, .2, tries=100, seed=args.seed)
+    for node_id in G.nodes():
         node = et.Element('actor')
         node.set('host', 'node-' + str(node_id))
         node_type = 'miner' if ((int) (random.random() * 101)) <= args.miners_ratio else 'node'
@@ -38,7 +33,8 @@ def add_nodes(root):
         node_total_count_argument = et.Element('argument')
         node_total_count_argument.set('value', str(args.nodes_count))
         node_peers_argument = et.Element('argument')
-        node_peers_argument.set('value', get_peers(node_id))
+        peers = [str(peer_id) for peer_id in list(G.adj[node_id])]
+        node_peers_argument.set('value', ' '.join(peers))
         node.append(node_id_argument)
         node.append(node_total_count_argument)
         node.append(node_peers_argument)
