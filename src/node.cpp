@@ -70,7 +70,6 @@ void Node::create_and_send_message_if_needed()
   if ((messages_to_send > 0) && ((rand() % 100) < 75)) {
     send_message_to_peers(get_message_to_send());
     messages_to_send--;
-    messages_produced++;
   }
 }
 
@@ -86,6 +85,7 @@ void Node::send_message_to_peers(Message* payload)
       int peer_id = *it_id;
       XBT_DEBUG("sending %s to %d", payload->get_type_name().c_str(), peer_id);
       simgrid::s4u::MailboxPtr mbox = get_peer_mailbox(peer_id);
+      messages_produced++;
       mbox->put_async(payload, msg_size + payload->size);
   }
 }
