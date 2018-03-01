@@ -25,12 +25,12 @@ bitcoin-simgrid$ make
 ## Run
 ### Without info logging
 ```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment.xml platform/default_blockchain_data.json --log="bitcoin_simgrid.fmt:%h:%m%n"
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment.xml platform/default_blockchain_data.json
 
 ```
 ### With debug logging
 ```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment.xml platform/default_blockchain_data.json --log="bitcoin_simgrid.fmt:%h:%m%n bitcoin_simgrid.thres:debug"
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment.xml platform/default_blockchain_data.json --log="bitcoin_simgrid.fmt:%10h:%e%m%n bitcoin_simgrid.thres:debug"
 
 ```
 
