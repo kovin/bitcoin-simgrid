@@ -29,7 +29,7 @@ Node::Node(std::vector<std::string> args)
 {
   active_nodes++;
   xbt_assert((args.size() - 1) == 3, "Expecting 3 parameters from the XML deployment file but got %zu", (args.size() - 1));
-  my_id = std::stol(args[1]);
+  my_id = std::stoi(args[1]);
   peers_count = std::stol(args[2]);
   std::vector<std::string> peers;
   split(args[3], ' ', std::back_inserter(peers));
