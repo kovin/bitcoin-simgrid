@@ -31,6 +31,7 @@ Node::Node(std::vector<std::string> args)
   xbt_assert((args.size() - 1) == 3, "Expecting 3 parameters from the XML deployment file but got %zu", (args.size() - 1));
   my_id = std::stoi(args[1]);
   peers_count = std::stol(args[2]);
+  xbt_assert(peers_count > 0, "You should define at least one peer");
   std::vector<std::string> peers;
   split(args[3], ' ', std::back_inserter(peers));
   std::vector<std::string>::iterator it;
@@ -38,7 +39,6 @@ Node::Node(std::vector<std::string> args)
     int peer_id = std::stoi(it->c_str());
     my_peers.push_back(peer_id);
   }
-  xbt_assert(peers_count > 0, "You should define at least one peer");
   std::string my_mailbox_name = std::string("receiver-") + std::to_string(my_id);
   my_mailbox = simgrid::s4u::Mailbox::byName(my_mailbox_name);
 }
