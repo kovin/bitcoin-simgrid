@@ -16,7 +16,6 @@ int main(int argc, char *argv[])
 
   xbt_assert((argc - 1) == 3, "Usage: %s platform_file deployment_file blockchain_data", argv[0]);
   srand(1);
-  XBT_INFO("starting");
 //blockchain_data = 1000;
   e.registerFunction<Node>("node");
   e.registerFunction<Miner>("miner");
@@ -53,6 +52,5 @@ int main(int argc, char *argv[])
 
   XBT_INFO("something: %d\n", j2["answer"]["everything"].get<int>());
 */
-  XBT_INFO("finished");
   return 0;
 }
