@@ -49,20 +49,27 @@ void Node::operator()()
     receive();
     create_and_send_message_if_needed();
   }
-  shutting_down = true;
   wait_for_other_before_shutdown();
 }
 
 void Node::wait_for_other_before_shutdown()
 {
+  XBT_DEBUG("shutting down");
+  shutting_down = true;
   while (!my_mailbox->empty()) {
     receive();
     simgrid::s4u::this_actor::sleep_for(1);
   }
   active_nodes--;
+  while (messages_received < messages_produced) {
+    receive();
+    simgrid::s4u::this_actor::sleep_for(1);
+  }
   while (active_nodes > 0) {
     simgrid::s4u::this_actor::sleep_for(1);
   }
+  simgrid::s4u::Actor::killAll();
+  XBT_DEBUG("shut down");
 }
 
 void Node::create_and_send_message_if_needed()
