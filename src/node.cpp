@@ -41,6 +41,7 @@ Node::Node(std::vector<std::string> args)
   }
   std::string my_mailbox_name = std::string("receiver-") + std::to_string(my_id);
   my_mailbox = simgrid::s4u::Mailbox::byName(my_mailbox_name);
+  simgrid::s4u::this_actor::onExit((int_f_pvoid_pvoid_t) on_exit, NULL);
 }
 
 void Node::operator()()
@@ -68,8 +69,8 @@ void Node::wait_for_other_before_shutdown()
   while (active_nodes > 0) {
     simgrid::s4u::this_actor::sleep_for(1);
   }
+  XBT_DEBUG("killing others");
   simgrid::s4u::Actor::killAll();
-  XBT_DEBUG("shut down");
 }
 
 void Node::create_and_send_message_if_needed()
