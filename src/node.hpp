@@ -57,6 +57,12 @@ private:
   void notify_unconfirmed_transactions_if_needed();
   simgrid::s4u::MailboxPtr get_peer_mailbox(int peer_id);
   void wait_for_other_before_shutdown();
+  static int on_exit(void*, void*)
+  {
+    XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
+    XBT_DEBUG("shut down");
+    return 0;
+  }
 };
 
 #endif /* NODE_HPP */
