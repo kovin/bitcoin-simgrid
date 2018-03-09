@@ -1,5 +1,7 @@
-#ifndef S4U_BLOCK_VERIFICATION_HPP
-#define S4U_BLOCK_VERIFICATION_HPP
+#ifndef BITCOIN_SIMGRID_HPP
+#define BITCOIN_SIMGRID_HPP
+#include <string>
 
+extern std::string deployment_directory;
 
-#endif
+#endif /* BITCOIN_SIMGRID_HPP */
