@@ -30,7 +30,7 @@ bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/defa
 ```
 ### With debug logging
 ```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --log="bitcoin_simgrid.fmt:%10h:%e%m%n bitcoin_simgrid.thres:debug"
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ -debug
 
 ```
 

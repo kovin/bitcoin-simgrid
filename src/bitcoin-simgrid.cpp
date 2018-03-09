@@ -10,7 +10,11 @@ std::string deployment_directory;
 int main(int argc, char *argv[])
 {
   simgrid::s4u::Engine e(&argc, argv);
-  xbt_assert((argc - 1) == 2, "Usage: %s platform_file deployment_directory", argv[0]);
+  argc -= 1;
+  xbt_assert(argc <= 3, "Usage: %s platform_file deployment_directory [-debug]", argv[0]);
+  if (argc == 3 && std::string(argv[3]) == "-debug") {
+    xbt_log_control_set("bitcoin_simgrid.fmt:%10h:%e%m%n bitcoin_simgrid.thres:debug");
+  }
   srand(1);
   e.registerFunction<Node>("node");
   e.registerFunction<Miner>("miner");
