@@ -25,12 +25,12 @@ bitcoin-simgrid$ make
 ## Run
 ### Without info logging
 ```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment.xml platform/default_blockchain_data.json
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/
 
 ```
 ### With debug logging
 ```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment.xml platform/default_blockchain_data.json --log="bitcoin_simgrid.fmt:%10h:%e%m%n bitcoin_simgrid.thres:debug"
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --log="bitcoin_simgrid.fmt:%10h:%e%m%n bitcoin_simgrid.thres:debug"
 
 ```
 
@@ -50,5 +50,5 @@ bitcoin-simgrid$ utils/createPlatformXml --file=platform/300_nodes_dijkstracache
 
 ## Deployment generation
 ```bash
-bitcoin-simgrid$ utils/createDeploymentXml --file=platform/100_nodes_deployment.xml --nodes_count=100 --peers_count=8 --miners_ratio=10
+bitcoin-simgrid$ utils/createDeploymentXml --nodes_count=300 --peers_count=8 --data_dir=platform/300_nodes_deployment --miners_ratio=10
 ```
