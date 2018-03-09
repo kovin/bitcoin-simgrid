@@ -2,7 +2,7 @@
 
 XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
 
-void Miner::create_and_send_message_if_needed()
+void Miner::send_messages()
 {
   if ((messages_to_send > 0) && ((rand() % 100) < 5)) {
     Node::send_message_to_peers(get_message_to_send());

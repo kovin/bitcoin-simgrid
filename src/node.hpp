@@ -6,13 +6,13 @@
 
 class Node : public BaseNode
 {
+public:
   int peers_count;
   double msg_size = 1000000;
   std::vector<int> my_peers;
   simgrid::s4u::CommPtr comm_received = nullptr;
   simgrid::s4u::MailboxPtr my_mailbox;
 
-public:
   explicit Node(std::vector<std::string> args);
   static int active_nodes;
   static int messages_produced;
@@ -28,7 +28,7 @@ protected:
   long blockchain_top = 0;// The block id corresponding to the top of the best chain so far // FIXME: take this from json bootstrap data
   std::map<long, long> known_blocks = {{0, 100}};// map of blocks we know about: <block-id, aggregated difficulty>
 
-  void create_and_send_message_if_needed();
+  void send_messages();
   Message* get_message_to_send();
   long compute_mempool_size();
   long total_bytes_received = 0;
@@ -38,11 +38,12 @@ protected:
   void send_message_to_peers(Message* payload);
 
 private:
+  void init_from_args(std::vector<std::string> args);
   bool shutting_down = false;
-  void receive();
+  void process_messages();
   void notify_unconfirmed_transactions_if_needed();
   simgrid::s4u::MailboxPtr get_peer_mailbox(int peer_id);
-  void wait_for_other_before_shutdown();
+  void wait_for_others_before_shutdown();
   static int on_exit(void*, void*)
   {
     XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);

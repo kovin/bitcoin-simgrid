@@ -38,33 +38,33 @@ void Node::init_from_args(std::vector<std::string> args)
 void Node::operator()()
 {
   while (messages_to_send > 0) {
-    receive();
-    create_and_send_message_if_needed();
+    process_messages();
+    send_messages();
   }
-  wait_for_other_before_shutdown();
+  wait_for_others_before_shutdown();
 }
 
-void Node::wait_for_other_before_shutdown()
+void Node::wait_for_others_before_shutdown()
 {
   XBT_DEBUG("shutting down");
   shutting_down = true;
   while (!my_mailbox->empty()) {
-    receive();
-    simgrid::s4u::this_actor::sleep_for(1);
+    process_messages();
+    simgrid::s4u::this_actor::sleep_for(SLEEP_DURATION);
   }
   active_nodes--;
   while (messages_received < messages_produced) {
-    receive();
-    simgrid::s4u::this_actor::sleep_for(1);
+    process_messages();
+    simgrid::s4u::this_actor::sleep_for(SLEEP_DURATION);
   }
   while (active_nodes > 0) {
-    simgrid::s4u::this_actor::sleep_for(1);
+    simgrid::s4u::this_actor::sleep_for(SLEEP_DURATION);
   }
   XBT_DEBUG("killing others");
   simgrid::s4u::Actor::killAll();
 }
 
-void Node::create_and_send_message_if_needed()
+void Node::send_messages()
 {
   if ((messages_to_send > 0) && ((rand() % 100) < 75)) {
     send_message_to_peers(get_message_to_send());
@@ -73,7 +73,7 @@ void Node::create_and_send_message_if_needed()
 }
 
 /*
-TODO: no enviar a todos los peers
+FIXME: no enviar mis transacciones a todos los peers
 solo enviar a 1 peer todas las transacciones que conozcamos
 al 25% restante enviar todo (excepto nuestras propias transacciones)
 */
@@ -92,13 +92,15 @@ void Node::send_message_to_peers(Message* payload)
 Message* Node::get_message_to_send()
 {
   long numberOfBytes = rand() & 100000;
+  // FIXME: agregar datos del utxo que estamos gastando con esta transaccion.
+  // el nodo deberia tener en su blockchain_data.json los datos de sus propios utxos
   Message* message = new Transaction(my_id, numberOfBytes);
   total_bytes_received += message->size;
   network_bytes_produced += message->size;
   return message;
 }
 
-void Node::receive()
+void Node::process_messages()
 {
   if (my_mailbox->empty()) {
     return;

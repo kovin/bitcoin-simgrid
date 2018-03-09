@@ -7,7 +7,7 @@ class Miner : public Node {
 public:
   explicit Miner(std::vector<std::string> args) : Node(args) {}
 protected:
-  void create_and_send_message_if_needed();
+  void send_messages();
   Message* get_message_to_send();
   void handle_new_transaction(Transaction *transaction);
 };
