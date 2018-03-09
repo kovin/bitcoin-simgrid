@@ -2,21 +2,7 @@
 #define NODE_HPP
 #define SLEEP_DURATION 1
 
-#include "simgrid/s4u.hpp"
-#include "message.hpp"
-#include <cstdlib>
-#include <set>
-#include <iostream>
-#include <string>
-#include <sstream>
-
-class BaseNode
-{
-protected:
-  virtual void create_and_send_message_if_needed() = 0;
-  virtual Message* get_message_to_send() = 0;
-  virtual void handle_new_transaction(Transaction *transaction) = 0;
-};
+#include "base-node.hpp"
 
 class Node : public BaseNode
 {
