@@ -3,13 +3,13 @@
 import networkx as nx
 import lxml.etree as et
 import argparse
-from tempfile import NamedTemporaryFile
-import os
 import re
 import random
+import json
+import os
 
 parser = argparse.ArgumentParser(description = 'Create a platform xml for the bitcoin-simgrid project')
-parser.add_argument('--file', type = str, help = 'the name of the produced xml', required = True)
+parser.add_argument('--data_dir', type = str, help = 'the directory for the produced deployment xml and individual nodes data json files', required = True)
 parser.add_argument('--nodes_count', type = int, help = 'the number of nodes involved in the simulation', required = True)
 parser.add_argument('--peers_count', type = int, help = 'the number of peers each node will have', required = True)
 parser.add_argument('--miners_ratio', type = int, help = 'a number between 0 an 100 for the ratio of miner in relation to nodes_count', required = False, default = 5)
@@ -18,10 +18,7 @@ parser.add_argument('--seed', type = int, help = 'Seed for random module', requi
 args = parser.parse_args()
 random.seed(args.seed)
 
-root = et.Element('platform')
-root.set('version', '4.1')
-
-def add_nodes(root):
+def create_nodes(root):
     G = nx.connected_watts_strogatz_graph(args.nodes_count, args.peers_count, .2, tries=100, seed=args.seed)
     for node_id in G.nodes():
         node = et.Element('actor')
@@ -30,23 +27,28 @@ def add_nodes(root):
         node.set('function', node_type)
         node_id_argument = et.Element('argument')
         node_id_argument.set('value', str(node_id))
-        node_total_count_argument = et.Element('argument')
-        node_total_count_argument.set('value', str(args.nodes_count))
-        node_peers_argument = et.Element('argument')
-        peers = [str(peer_id) for peer_id in list(G.adj[node_id])]
-        node_peers_argument.set('value', ' '.join(peers))
         node.append(node_id_argument)
-        node.append(node_total_count_argument)
-        node.append(node_peers_argument)
         root.append(node)
+        node_data = open('%s/node_data-%s' % (args.data_dir, node_id) , 'w')
+        peers = [peer_id for peer_id in list(G.adj[node_id])]
+        json.dump({'peers': map(int, peers)}, node_data)
+        node_data.close()
 
-add_nodes(root)
+def create_directory():
+    if not os.path.exists(args.data_dir):
+        os.makedirs(args.data_dir)
 
-monitor = et.Element('actor')
-monitor.set('host', 'node-%s' % args.nodes_count)
-monitor.set('function', 'monitor')
-root.append(monitor)
+def create():
+    root = et.Element('platform')
+    root.set('version', '4.1')
+    create_directory()
+    create_nodes(root)
+    monitor = et.Element('actor')
+    monitor.set('host', 'node-%s' % args.nodes_count)
+    monitor.set('function', 'monitor')
+    root.append(monitor)
+    tree = et.ElementTree(root)
+    tree.docinfo.system_url = 'http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd'
+    tree.write(args.data_dir + '/deployment.xml', xml_declaration = True, encoding = "utf-8")
 
-tree = et.ElementTree(root)
-tree.docinfo.system_url = 'http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd'
-tree.write(args.file, xml_declaration = True, encoding = "utf-8")
+create()
