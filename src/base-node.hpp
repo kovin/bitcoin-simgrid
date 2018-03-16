@@ -15,7 +15,6 @@ class BaseNode
 protected:
   virtual void send_messages() = 0;
   virtual Message* get_message_to_send() = 0;
-  virtual void handle_new_transaction(Transaction *transaction) = 0;
 };
 
 #endif /* BASE_NODE_HPP */

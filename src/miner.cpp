@@ -19,12 +19,6 @@ Message* Miner::get_message_to_send()
   long pre_size = compute_mempool_size();
   mempool = std::map<long, Transaction>();
   long post_size = compute_mempool_size();
-  total_bytes_received += (post_size - pre_size + block->size);
   network_bytes_produced += (post_size - pre_size + block->size);
   return block;
-}
-
-void Miner::handle_new_transaction(Transaction *transaction)
-{
-  Node::handle_new_transaction(transaction);
 }

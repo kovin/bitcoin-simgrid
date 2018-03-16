@@ -31,7 +31,6 @@ protected:
   void send_messages();
   Message* get_message_to_send();
   long compute_mempool_size();
-  long total_bytes_received = 0;
   void handle_new_transaction(Transaction *transaction);
   void handle_new_block(Block *block);
   void handle_unconfirmed_transactions(UnconfirmedTransactions *message);
@@ -44,10 +43,10 @@ private:
   void notify_unconfirmed_transactions_if_needed();
   simgrid::s4u::MailboxPtr get_peer_mailbox(int peer_id);
   void wait_for_others_before_shutdown();
+  double get_time_to_process_block(Block* block);
   static int on_exit(void*, void*)
   {
     XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
-    XBT_DEBUG("shut down");
     return 0;
   }
 };

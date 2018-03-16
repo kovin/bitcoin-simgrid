@@ -53,10 +53,6 @@ void Node::wait_for_others_before_shutdown()
     simgrid::s4u::this_actor::sleep_for(SLEEP_DURATION);
   }
   active_nodes--;
-  while (messages_received < messages_produced) {
-    process_messages();
-    simgrid::s4u::this_actor::sleep_for(SLEEP_DURATION);
-  }
   while (active_nodes > 0) {
     simgrid::s4u::this_actor::sleep_for(SLEEP_DURATION);
   }
@@ -95,7 +91,6 @@ Message* Node::get_message_to_send()
   // FIXME: agregar datos del utxo que estamos gastando con esta transaccion.
   // el nodo deberia tener en su blockchain_data.json los datos de sus propios utxos
   Message* message = new Transaction(my_id, numberOfBytes);
-  total_bytes_received += message->size;
   network_bytes_produced += message->size;
   return message;
 }
@@ -147,8 +142,10 @@ void Node::handle_new_transaction(Transaction *transaction)
     long pre_size = compute_mempool_size();
     mempool.insert(std::make_pair(transaction->id, *transaction));
     long post_size = compute_mempool_size();
-    total_bytes_received += (post_size - pre_size);
-    network_bytes_produced += (post_size - pre_size);
+    long size_increase = post_size - pre_size;
+    network_bytes_produced += size_increase;
+    // Fix: find a more suitable way to calculate execution after tx validation
+    simgrid::s4u::this_actor::execute(1e8);// work for .1 seconds
   }
 }
 
@@ -162,9 +159,22 @@ void Node::handle_new_block(Block *block)
     long pre_size = compute_mempool_size();
     mempool = DiffMaps(mempool, block->transactions);
     long post_size = compute_mempool_size() + block->size;
-    total_bytes_received += (post_size - pre_size);
-    network_bytes_produced += (post_size - pre_size);
+    long size_increase = post_size - pre_size;
+    network_bytes_produced += size_increase;
+    simgrid::s4u::this_actor::execute(get_time_to_process_block(block));
   }
+}
+
+double Node::get_time_to_process_block(Block* block)
+{
+  // Coefficients for f(x) = c2*x^2 + c1*x + c0; where x is the block size and f(x) the time to process it
+  double c2 = 3.4510e-03;
+  double c1 = -3.3800e-01;
+  double c0 = 4.0727e+03;
+  long x = block->size;
+  double pre_processed_time = c2 * x * x + c1 * x + c0;
+  double scale_factor = 1.16401e02;// We found out this is a good aproximation when comparing against the bitcoin reference client
+  return pre_processed_time * scale_factor;
 }
 
 void Node::handle_unconfirmed_transactions(UnconfirmedTransactions *message)
@@ -172,8 +182,9 @@ void Node::handle_unconfirmed_transactions(UnconfirmedTransactions *message)
   long pre_size = compute_mempool_size();
   mempool = JoinMaps(mempool, message->unconfirmed_transactions);
   long post_size = compute_mempool_size();
-  total_bytes_received += (post_size - pre_size);
   network_bytes_produced += (post_size - pre_size);
+  // Fix: find a more suitable way to calculate execution duration for unconfirmed txs
+  simgrid::s4u::this_actor::execute(1e8 * message->unconfirmed_transactions.size());// work for .1 seconds for each transaction
 }
 
 long Node::compute_mempool_size()
