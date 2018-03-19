@@ -1,4 +1,4 @@
-#include "aux-functions.hpp"
+#include "aux_functions.hpp"
 
 long lrand(long limit)
 {

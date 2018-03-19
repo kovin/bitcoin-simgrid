@@ -1,4 +1,4 @@
-#include "bitcoin-simgrid.hpp"
+#include "bitcoin_simgrid.hpp"
 #include "monitor.hpp"
 
 XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);

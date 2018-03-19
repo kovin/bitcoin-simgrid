@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(bitcoin-simgrid)
+project(bitcoin_simgrid)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
@@ -12,12 +12,12 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 OLD)
 endif(COMMAND cmake_policy)
 
-add_executable       (bitcoin-simgrid src/bitcoin-simgrid.cpp src/node.cpp src/miner.cpp src/monitor.cpp src/aux-functions.cpp)
-target_link_libraries(bitcoin-simgrid simgrid)
-set_target_properties(bitcoin-simgrid PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+add_executable       (bitcoin_simgrid src/bitcoin_simgrid.cpp src/node.cpp src/miner.cpp src/monitor.cpp src/aux_functions.cpp)
+target_link_libraries(bitcoin_simgrid simgrid)
+set_target_properties(bitcoin_simgrid PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 foreach (file node miner monitor aux-functions)
   set(examples_src ${examples_src} ${CMAKE_CURRENT_SOURCE_DIR}/src/${file}.cpp)
 endforeach()
 
 include_directories("${SimGrid_INCLUDE_DIR}" SYSTEM)
-target_link_libraries(bitcoin-simgrid ${SimGrid_LIBRARY})
+target_link_libraries(bitcoin_simgrid ${SimGrid_LIBRARY})

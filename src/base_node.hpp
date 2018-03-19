@@ -1,6 +1,5 @@
 #ifndef BASE_NODE_HPP
 #define BASE_NODE_HPP
-#define SLEEP_DURATION 1
 
 #include "simgrid/s4u.hpp"
 #include "message.hpp"

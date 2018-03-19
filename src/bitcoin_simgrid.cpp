@@ -1,4 +1,4 @@
-#include "bitcoin-simgrid.hpp"
+#include "bitcoin_simgrid.hpp"
 #include "node.hpp"
 #include "miner.hpp"
 #include "monitor.hpp"

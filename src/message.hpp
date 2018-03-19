@@ -1,7 +1,7 @@
 #ifndef MESSAGE_HPP
 #define MESSAGE_HPP
 
-#include "aux-functions.hpp"
+#include "aux_functions.hpp"
 #include <set>
 
 const long BLOCK_DIFFICULTY_THRESHOLD = 10000;

@@ -1,8 +1,7 @@
 #ifndef NODE_HPP
 #define NODE_HPP
-#define SLEEP_DURATION 1
 
-#include "base-node.hpp"
+#include "base_node.hpp"
 
 class Node : public BaseNode
 {

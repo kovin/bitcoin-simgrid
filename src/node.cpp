@@ -1,6 +1,7 @@
-#include "bitcoin-simgrid.hpp"
+#include "bitcoin_simgrid.hpp"
 #include "node.hpp"
-#include "aux-functions.hpp"
+#include "aux_functions.hpp"
+#include "magic_constants.hpp"
 #include <fstream>
 #include "json.hpp"
 
