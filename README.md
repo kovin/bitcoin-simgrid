@@ -23,14 +23,24 @@ bitcoin-simgrid$ make
 ```
 
 ## Run
-### Without info logging
+### Simple
 ```bash
 bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/
 
 ```
-### With debug logging
+### Setting the simulation duration time (in seconds)
+```bash
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --duration-time=30000
+
+```
+### With debug information
 ```bash
 bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ -debug
+
+```
+### With custom log
+```bash
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --log="bitcoin_simgrid.fmt:%d%10h:%e%m%n bitcoin_simgrid.thres:debug"
 
 ```
 
