@@ -9,8 +9,6 @@ public:
   int peers_count;
   double msg_size = 1000000;
   std::vector<int> my_peers;
-  simgrid::s4u::CommPtr comm_received = nullptr;
-  simgrid::s4u::MailboxPtr my_mailbox;
 
   explicit Node(std::vector<std::string> args);
   static int active_nodes;
@@ -40,7 +38,8 @@ private:
   bool shutting_down = false;
   void process_messages();
   void notify_unconfirmed_transactions_if_needed();
-  simgrid::s4u::MailboxPtr get_peer_mailbox(int peer_id);
+  simgrid::s4u::MailboxPtr get_peer_incoming_mailbox(int peer_id);
+  simgrid::s4u::MailboxPtr get_peer_outgoing_mailbox(int peer_id);
   void wait_for_others_before_shutdown();
   double get_time_to_process_block(Block* block);
   static int on_exit(void*, void*)

@@ -18,8 +18,6 @@ Node::Node(std::vector<std::string> args)
 {
   active_nodes++;
   init_from_args(args);
-  std::string my_mailbox_name = std::string("receiver-") + std::to_string(my_id);
-  my_mailbox = simgrid::s4u::Mailbox::byName(my_mailbox_name);
   simgrid::s4u::this_actor::onExit((int_f_pvoid_pvoid_t) on_exit, NULL);
 }
 
@@ -41,6 +39,7 @@ void Node::operator()()
   while (messages_to_send > 0) {
     process_messages();
     send_messages();
+    simgrid::s4u::this_actor::sleep_for(SLEEP_DURATION);
   }
   wait_for_others_before_shutdown();
 }
@@ -49,13 +48,9 @@ void Node::wait_for_others_before_shutdown()
 {
   XBT_DEBUG("shutting down");
   shutting_down = true;
-  while (!my_mailbox->empty()) {
-    process_messages();
-    simgrid::s4u::this_actor::sleep_for(SLEEP_DURATION);
-  }
   active_nodes--;
-  while (active_nodes > 0) {
-    simgrid::s4u::this_actor::sleep_for(SLEEP_DURATION);
+  while (active_nodes > 0 && (simgrid::s4u::Engine::getClock() < SIMULATION_DURATION)) {
+    simgrid::s4u::this_actor::sleep_for(10);
   }
   XBT_DEBUG("killing others");
   simgrid::s4u::Actor::killAll();
@@ -67,6 +62,7 @@ void Node::send_messages()
     send_message_to_peers(get_message_to_send());
     messages_to_send--;
   }
+  notify_unconfirmed_transactions_if_needed();
 }
 
 /*
@@ -76,11 +72,10 @@ al 25% restante enviar todo (excepto nuestras propias transacciones)
 */
 void Node::send_message_to_peers(Message* payload)
 {
-  std::vector<int>::iterator it_id;
-  for(it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
+  for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
       int peer_id = *it_id;
       XBT_DEBUG("sending %s to %d", payload->get_type_name().c_str(), peer_id);
-      simgrid::s4u::MailboxPtr mbox = get_peer_mailbox(peer_id);
+      simgrid::s4u::MailboxPtr mbox = get_peer_outgoing_mailbox(peer_id);
       messages_produced++;
       mbox->put_async(payload, msg_size + payload->size);
   }
@@ -98,30 +93,29 @@ Message* Node::get_message_to_send()
 
 void Node::process_messages()
 {
-  if (my_mailbox->empty()) {
-    return;
-  }
-  while (!my_mailbox->empty()) {
-    messages_received++;
-    void* data = my_mailbox->get();
-    Message *payload = static_cast<Message*>(data);
-    XBT_DEBUG("received %s from %d", payload->get_type_name().c_str(), payload->peer_id);
-    comm_received = nullptr;
-    switch (payload->get_type()) {
-      case MESSAGE_TRANSACTION:
-        handle_new_transaction(static_cast<Transaction*>(data));
-        break;
-      case MESSAGE_BLOCK:
-        handle_new_block(static_cast<Block*>(data));
-        break;
-      case UNCONFIRMED_TRANSACTIONS:
-        handle_unconfirmed_transactions(static_cast<UnconfirmedTransactions*>(data));
-        break;
-      default:
-        THROW_IMPOSSIBLE;
+  for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
+    int peer_id = *it_id;
+    simgrid::s4u::MailboxPtr mbox = get_peer_incoming_mailbox(peer_id);
+    while (!mbox->empty()) {
+      messages_received++;
+      void* data = mbox->get();
+      Message *payload = static_cast<Message*>(data);
+      XBT_DEBUG("received %s from %d", payload->get_type_name().c_str(), payload->peer_id);
+      switch (payload->get_type()) {
+        case MESSAGE_TRANSACTION:
+          handle_new_transaction(static_cast<Transaction*>(data));
+          break;
+        case MESSAGE_BLOCK:
+          handle_new_block(static_cast<Block*>(data));
+          break;
+        case UNCONFIRMED_TRANSACTIONS:
+          handle_unconfirmed_transactions(static_cast<UnconfirmedTransactions*>(data));
+          break;
+        default:
+          THROW_IMPOSSIBLE;
+      }
     }
   }
-  notify_unconfirmed_transactions_if_needed();
 }
 
 void Node::notify_unconfirmed_transactions_if_needed()
@@ -146,7 +140,7 @@ void Node::handle_new_transaction(Transaction *transaction)
     long size_increase = post_size - pre_size;
     network_bytes_produced += size_increase;
     // Fix: find a more suitable way to calculate execution after tx validation
-    simgrid::s4u::this_actor::execute(1e8);// work for .1 seconds
+    simgrid::s4u::this_actor::execute(1e8);// work for .1 second
   }
 }
 
@@ -200,8 +194,14 @@ long Node::compute_mempool_size()
   return result;
 }
 
-simgrid::s4u::MailboxPtr Node::get_peer_mailbox(int peer_id)
+simgrid::s4u::MailboxPtr Node::get_peer_incoming_mailbox(int peer_id)
 {
-  std::string mboxName = std::string("receiver-") + std::to_string(peer_id);
+  std::string mboxName = std::string("from:") + std::to_string(peer_id) + "-to:" + std::to_string(my_id);
+  return simgrid::s4u::Mailbox::byName(mboxName);
+}
+
+simgrid::s4u::MailboxPtr Node::get_peer_outgoing_mailbox(int peer_id)
+{
+  std::string mboxName = std::string("from:") + std::to_string(my_id) + "-to:" + std::to_string(peer_id);
   return simgrid::s4u::Mailbox::byName(mboxName);
 }
