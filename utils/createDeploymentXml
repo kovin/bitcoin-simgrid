@@ -43,10 +43,6 @@ def create():
     root.set('version', '4.1')
     create_directory()
     create_nodes(root)
-    monitor = et.Element('actor')
-    monitor.set('host', 'node-%s' % args.nodes_count)
-    monitor.set('function', 'monitor')
-    root.append(monitor)
     tree = et.ElementTree(root)
     tree.docinfo.system_url = 'http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd'
     tree.write(args.data_dir + '/deployment.xml', xml_declaration = True, encoding = "utf-8")
