@@ -5,6 +5,7 @@
 #include <cstdlib>
 
 long lrand(long limit = 0);
+double frand();
 
 template<typename KeyType, typename Value>
 std::map<KeyType, Value> DiffMaps(const std::map<KeyType, Value> & left, const std::map<KeyType, Value> & right)

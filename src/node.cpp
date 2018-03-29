@@ -1,94 +1,81 @@
-#include "bitcoin_simgrid.hpp"
 #include "node.hpp"
-#include "aux_functions.hpp"
-#include "magic_constants.hpp"
-#include <fstream>
-#include "json.hpp"
 
 using json = nlohmann::json;
 
 XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
 
-int Node::active_nodes = 0;
-int Node::messages_produced = 0;
-int Node::messages_received = 0;
-long Node::network_bytes_produced = 0;
-
 Node::Node(std::vector<std::string> args)
 {
-  active_nodes++;
   init_from_args(args);
   simgrid::s4u::this_actor::onExit((int_f_pvoid_pvoid_t) on_exit, NULL);
 }
 
 void Node::init_from_args(std::vector<std::string> args)
 {
-  xbt_assert((args.size() - 1) == 1, "Expecting 1 parameter from the XML deployment file but got %zu", (args.size() - 1));
-  my_id = std::stoi(args[1]);
-  std::string node_data_filename = deployment_directory + std::string("/node_data-") + std::to_string(my_id);
-  std::ifstream node_data_stream(node_data_filename);
-  xbt_assert(node_data_stream.good(), "File %s doesn't exist or the program doesn't have permission to read it", node_data_filename.c_str());
-  json node_data;
-  node_data_stream >> node_data;
-  my_peers = node_data["peers"].get<std::vector<int>>();
-  xbt_assert(my_peers.size() > 0, "You should define at least one peer");
+  BaseNode::init_from_args(args);
+  event_probability = node_data["event_probability"].get<double>();
+  xbt_assert(event_probability >= 0 && event_probability <= 1, "Probability of an event should be in the range [0, 1]");
+  txs_per_day = node_data["txs_per_day"].get<int>();
+  xbt_assert(txs_per_day >= 0, "Transaction per day can't be negative");
+  do_set_next_activity_time();
 }
 
-void Node::operator()()
+std::string Node::get_node_data_filename(int id) {
+  return deployment_directory + simgrid::s4u::this_actor::getName() + std::string("_data-") + std::to_string(my_id);
+}
+
+/*void Node::operator()()
 {
-  while (messages_to_send > 0) {
+  while (simgrid::s4u::Engine::getClock() < SIMULATION_DURATION) {
+    XBT_DEBUG("generate_activity");
+    generate_activity();
+    XBT_DEBUG("process_messages");
     process_messages();
+    XBT_DEBUG("process_messages");
     send_messages();
     simgrid::s4u::this_actor::sleep_for(SLEEP_DURATION);
   }
-  wait_for_others_before_shutdown();
-}
-
-void Node::wait_for_others_before_shutdown()
-{
   XBT_DEBUG("shutting down");
-  shutting_down = true;
-  active_nodes--;
-  while (active_nodes > 0 && (simgrid::s4u::Engine::getClock() < SIMULATION_DURATION)) {
-    simgrid::s4u::this_actor::sleep_for(10);
-  }
-  XBT_DEBUG("killing others");
   simgrid::s4u::Actor::killAll();
+}
+*/
+void Node::do_set_next_activity_time()
+{
+  next_activity_time = get_next_activity_time(event_probability, 24 * 60 * 60, txs_per_day);
 }
 
 void Node::send_messages()
 {
-  if ((messages_to_send > 0) && ((rand() % 100) < 75)) {
-    send_message_to_peers(get_message_to_send());
-    messages_to_send--;
-  }
-  notify_unconfirmed_transactions_if_needed();
+    Message *payload = new UnconfirmedTransactions(my_id, mempool);
+    // We only communicate pending transactions to 1/4 of our peers (following the reference client behavior)
+    send_message_to_peers(payload, 25);
 }
 
-/*
-FIXME: no enviar mis transacciones a todos los peers
-solo enviar a 1 peer todas las transacciones que conozcamos
-al 25% restante enviar todo (excepto nuestras propias transacciones)
-*/
-void Node::send_message_to_peers(Message* payload)
+void Node::send_message_to_peers(Message* payload, int percentage_of_peers)
 {
   for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
-      int peer_id = *it_id;
-      XBT_DEBUG("sending %s to %d", payload->get_type_name().c_str(), peer_id);
-      simgrid::s4u::MailboxPtr mbox = get_peer_outgoing_mailbox(peer_id);
-      messages_produced++;
-      mbox->put_async(payload, msg_size + payload->size);
+    if ((rand() % 100) > percentage_of_peers) {
+      continue;
+    }
+    int peer_id = *it_id;
+    payload->get_type_name();
+    XBT_DEBUG("sending %s to %d", payload->get_type_name().c_str(), peer_id);
+    simgrid::s4u::MailboxPtr mbox = get_peer_outgoing_mailbox(peer_id);
+    mbox->put_async(payload, msg_size + payload->size);
   }
 }
 
-Message* Node::get_message_to_send()
+void Node::generate_activity()
 {
+  if (next_activity_time > simgrid::s4u::Engine::getClock()) {
+    return;
+  }
+  do_set_next_activity_time();
   long numberOfBytes = rand() & 100000;
   // FIXME: agregar datos del utxo que estamos gastando con esta transaccion.
   // el nodo deberia tener en su blockchain_data.json los datos de sus propios utxos
-  Message* message = new Transaction(my_id, numberOfBytes);
-  network_bytes_produced += message->size;
-  return message;
+  Transaction* message = new Transaction(my_id, numberOfBytes);
+  mempool.insert(std::make_pair(message->id, *message));
 }
 
 void Node::process_messages()
@@ -97,14 +84,10 @@ void Node::process_messages()
     int peer_id = *it_id;
     simgrid::s4u::MailboxPtr mbox = get_peer_incoming_mailbox(peer_id);
     while (!mbox->empty()) {
-      messages_received++;
       void* data = mbox->get();
       Message *payload = static_cast<Message*>(data);
       XBT_DEBUG("received %s from %d", payload->get_type_name().c_str(), payload->peer_id);
       switch (payload->get_type()) {
-        case MESSAGE_TRANSACTION:
-          handle_new_transaction(static_cast<Transaction*>(data));
-          break;
         case MESSAGE_BLOCK:
           handle_new_block(static_cast<Block*>(data));
           break;
@@ -118,32 +101,6 @@ void Node::process_messages()
   }
 }
 
-void Node::notify_unconfirmed_transactions_if_needed()
-{
-  if (shutting_down) {
-    return;
-  }
-  if ((rand() % 100) < 25) {
-    Message *payload = new UnconfirmedTransactions(my_id, mempool);
-    send_message_to_peers(payload);
-  }
-}
-
-void Node::handle_new_transaction(Transaction *transaction)
-{
-  std::map<long, Transaction>::iterator it;
-  it = mempool.find(transaction->id);
-  if (it == mempool.end()) {
-    long pre_size = compute_mempool_size();
-    mempool.insert(std::make_pair(transaction->id, *transaction));
-    long post_size = compute_mempool_size();
-    long size_increase = post_size - pre_size;
-    network_bytes_produced += size_increase;
-    // Fix: find a more suitable way to calculate execution after tx validation
-    simgrid::s4u::this_actor::execute(1e8);// work for .1 second
-  }
-}
-
 void Node::handle_new_block(Block *block)
 {
   try {
@@ -151,11 +108,7 @@ void Node::handle_new_block(Block *block)
   } catch (const std::out_of_range& oor) {
     long previous_difficulty = known_blocks[blockchain_top];
     known_blocks[block->id] = block->difficulty + previous_difficulty;
-    long pre_size = compute_mempool_size();
     mempool = DiffMaps(mempool, block->transactions);
-    long post_size = compute_mempool_size() + block->size;
-    long size_increase = post_size - pre_size;
-    network_bytes_produced += size_increase;
     simgrid::s4u::this_actor::execute(get_time_to_process_block(block));
   }
 }
@@ -169,15 +122,13 @@ double Node::get_time_to_process_block(Block* block)
   long x = block->size;
   double pre_processed_time = c2 * x * x + c1 * x + c0;
   double scale_factor = 1.16401e02;// We found out this is a good aproximation when comparing against the bitcoin reference client
+  scale_factor = 1.16401e-02;
   return pre_processed_time * scale_factor;
 }
 
 void Node::handle_unconfirmed_transactions(UnconfirmedTransactions *message)
 {
-  long pre_size = compute_mempool_size();
   mempool = JoinMaps(mempool, message->unconfirmed_transactions);
-  long post_size = compute_mempool_size();
-  network_bytes_produced += (post_size - pre_size);
   // Fix: find a more suitable way to calculate execution duration for unconfirmed txs
   simgrid::s4u::this_actor::execute(1e8 * message->unconfirmed_transactions.size());// work for .1 seconds for each transaction
 }

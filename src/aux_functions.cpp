@@ -1,4 +1,5 @@
 #include "aux_functions.hpp"
+#include <random>
 
 long lrand(long limit)
 {
@@ -9,4 +10,11 @@ long lrand(long limit)
     result = rand();
   }
   return limit ? result % limit : result;
+}
+
+std::default_random_engine re;
+double frand()
+{
+  std::uniform_real_distribution<double> unif(0, 1);
+ return unif(re);
 }
