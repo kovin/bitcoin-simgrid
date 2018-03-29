@@ -10,7 +10,6 @@ public:
 
   explicit Node() {};
   explicit Node(std::vector<std::string> args);
-  //void operator()();
 
 protected:
   std::map<long, Transaction> mempool;// map of unconfirmed transactions: <txid, tx>
