@@ -28,14 +28,15 @@ def create_nodes(root):
         node = et.Element('actor')
         node.set('host', 'node-' + str(node_id))
         peers = [peer_id for peer_id in list(G.adj[node_id])]
-        node_data = {'peers': map(int, peers)}
+        node_data = {
+            'peers': map(int, peers),
+            'event_probability': 1.0 / args.nodes_count,
+            'txs_per_day': args.txs_per_day
+        }
         node_type = node_types[node_id]
         if node_type == 'miner':
             node_data['difficulty'] = args.difficulty
             node_data['hashrate'] = (25130091717 / 100 * args.miners_ratio) * 10 ** 9
-        else:
-            node_data['event_probability'] = 1.0 / args.nodes_count
-            node_data['txs_per_day'] = args.txs_per_day
         node.set('function', node_type)
         node_id_argument = et.Element('argument')
         node_id_argument.set('value', str(node_id))

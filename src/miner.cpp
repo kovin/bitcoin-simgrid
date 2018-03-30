@@ -10,7 +10,7 @@ Miner::Miner(std::vector<std::string> args): Node::Node()
 
 void Miner::init_from_args(std::vector<std::string> args)
 {
-  BaseNode::init_from_args(args);
+  Node::init_from_args(args);
   difficulty = node_data["difficulty"].get<long long>();
   xbt_assert(difficulty > 0, "Network difficulty must be greater than 0, got %lld", difficulty);
   hashrate = node_data["hashrate"].get<long long>();
@@ -43,8 +43,8 @@ void Miner::generate_activity()
 
 void Miner::send_messages()
 {
+  Node::send_messages();
   if (NULL != pending_block) {
-    Node::send_messages();
     send_message_to_peers(pending_block, 100);
     pending_block = NULL;
   }
