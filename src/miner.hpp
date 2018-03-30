@@ -6,11 +6,6 @@
 class Miner : public Node {
 public:
   explicit Miner(std::vector<std::string> args);
-/*public:
-  explicit Miner(std::vector<std::string> args) {
-    init_from_args(args);
-    simgrid::s4u::this_actor::onExit((int_f_pvoid_pvoid_t) on_exit, NULL);
-  }*/
 
 protected:
   void init_from_args(std::vector<std::string> args);
@@ -23,6 +18,7 @@ private:
   double next_activity_time;
   Block* pending_block = NULL;
 
+  // We set next time accoriding to the probability of this miner finding a block in the next 10 minutes
   void do_set_next_activity_time();
 };
 

@@ -24,45 +24,31 @@ std::string Node::get_node_data_filename(int id) {
   return deployment_directory + simgrid::s4u::this_actor::getName() + std::string("_data-") + std::to_string(my_id);
 }
 
-/*void Node::operator()()
-{
-  while (simgrid::s4u::Engine::getClock() < SIMULATION_DURATION) {
-    XBT_DEBUG("generate_activity");
-    generate_activity();
-    XBT_DEBUG("process_messages");
-    process_messages();
-    XBT_DEBUG("process_messages");
-    send_messages();
-    simgrid::s4u::this_actor::sleep_for(SLEEP_DURATION);
-  }
-  XBT_DEBUG("shutting down");
-  simgrid::s4u::Actor::killAll();
-}
-*/
 void Node::do_set_next_activity_time()
 {
+  XBT_DEBUG("event_probability: %f, txs_per_day: %d", event_probability, txs_per_day);
   next_activity_time = get_next_activity_time(event_probability, 24 * 60 * 60, txs_per_day);
 }
 
 void Node::send_messages()
 {
-    Message *payload = new UnconfirmedTransactions(my_id, mempool);
-    // We only communicate pending transactions to 1/4 of our peers (following the reference client behavior)
-    send_message_to_peers(payload, 25);
-}
-
-void Node::send_message_to_peers(Message* payload, int percentage_of_peers)
-{
+  // We will let each peer know about recent unconfirmed txs (but we won't send the txs that we know the peer already knows)
   for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
-    if ((rand() % 100) > percentage_of_peers) {
-      continue;
-    }
     int peer_id = *it_id;
-    payload->get_type_name();
-    XBT_DEBUG("sending %s to %d", payload->get_type_name().c_str(), peer_id);
-    simgrid::s4u::MailboxPtr mbox = get_peer_outgoing_mailbox(peer_id);
-    mbox->put_async(payload, msg_size + payload->size);
+    std::map<long, Transaction> txs_to_send = DiffMaps(txs_to_broadcast, txs_known_by_peer[peer_id]);
+    if (txs_to_send.size() > 0) {
+      Message *message = new UnconfirmedTransactions(my_id, txs_to_send);
+      XBT_DEBUG("sending %ld unconfirmed transactions to %d", txs_to_send.size(), peer_id);
+      simgrid::s4u::MailboxPtr mbox = get_peer_outgoing_mailbox(peer_id);
+      mbox->put_async(message, msg_size + message->size);
+    }
   }
+  /* We won't relay any txs in the next iteration unless:
+  * a) this node creates a tx
+  * b) we receive a block with txs that are not present in our mempool
+  * c) we receive unconfirmed txs that are not present in our mempool
+  */
+  txs_to_broadcast.clear();
 }
 
 void Node::generate_activity()
@@ -71,11 +57,13 @@ void Node::generate_activity()
     return;
   }
   do_set_next_activity_time();
+  XBT_DEBUG("creating tx");
   long numberOfBytes = rand() & 100000;
   // FIXME: agregar datos del utxo que estamos gastando con esta transaccion.
   // el nodo deberia tener en su blockchain_data.json los datos de sus propios utxos
   Transaction* message = new Transaction(my_id, numberOfBytes);
   mempool.insert(std::make_pair(message->id, *message));
+  txs_to_broadcast.insert(std::make_pair(message->id, *message));
 }
 
 void Node::process_messages()
@@ -108,6 +96,14 @@ void Node::handle_new_block(Block *block)
   } catch (const std::out_of_range& oor) {
     long previous_difficulty = known_blocks[blockchain_top];
     known_blocks[block->id] = block->difficulty + previous_difficulty;
+    // The new transactions to broadcast will be the ones we didn't know of before
+    std::map<long, Transaction> txs_to_broadcast = DiffMaps(block->transactions, mempool);
+    // Remove from the transactions known by our peers those present in the mempool (because we will also remove the confirmed txs from the mempool)
+    for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
+      int peer_id = *it_id;
+      txs_known_by_peer[peer_id] = DiffMaps(txs_known_by_peer[peer_id], mempool);
+    }
+    // Now that we know of txs that got confirmed we need to evict them from our mempool
     mempool = DiffMaps(mempool, block->transactions);
     simgrid::s4u::this_actor::execute(get_time_to_process_block(block));
   }
@@ -129,6 +125,8 @@ double Node::get_time_to_process_block(Block* block)
 void Node::handle_unconfirmed_transactions(UnconfirmedTransactions *message)
 {
   mempool = JoinMaps(mempool, message->unconfirmed_transactions);
+  txs_to_broadcast = JoinMaps(txs_to_broadcast, message->unconfirmed_transactions);
+  txs_known_by_peer[message->peer_id] = JoinMaps(txs_known_by_peer[message->peer_id], message->unconfirmed_transactions);
   // Fix: find a more suitable way to calculate execution duration for unconfirmed txs
   simgrid::s4u::this_actor::execute(1e8 * message->unconfirmed_transactions.size());// work for .1 seconds for each transaction
 }

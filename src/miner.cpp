@@ -20,7 +20,6 @@ void Miner::init_from_args(std::vector<std::string> args)
 
 void Miner::do_set_next_activity_time()
 {
-  // We will calculate the probability of this miner finding a block in the next 10 minutes
   int timespan = 600; // 10 minutes
   double shares = (hashrate / pow(2, 32)) * timespan ;
   double event_probability = 1 - pow(1 - 1.0 / difficulty, shares);
@@ -45,7 +44,12 @@ void Miner::send_messages()
 {
   Node::send_messages();
   if (NULL != pending_block) {
-    send_message_to_peers(pending_block, 100);
+    for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
+      int peer_id = *it_id;
+      XBT_DEBUG("sending block to %d", peer_id);
+      simgrid::s4u::MailboxPtr mbox = get_peer_outgoing_mailbox(peer_id);
+      mbox->put_async(pending_block, msg_size + pending_block->size);
+    }
     pending_block = NULL;
   }
 }
