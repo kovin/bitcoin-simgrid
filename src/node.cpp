@@ -32,6 +32,26 @@ void Node::do_set_next_activity_time()
 
 void Node::send_messages()
 {
+  // We will let each peer know about new blocks (but we won't send the blocks that we know the peer already knows)
+  for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
+    int peer_id = *it_id;
+    std::map<long, Block> blocks_to_send = DiffMaps(blocks_to_broadcast, blocks_known_by_peer[peer_id]);
+    typename std::map<long, Block>::const_iterator it_block = blocks_to_send.begin();
+    while(it_block != blocks_to_send.end()) {
+      XBT_DEBUG("sending block to %d", peer_id);
+      simgrid::s4u::MailboxPtr mbox = get_peer_outgoing_mailbox(peer_id);
+      mbox->put_async(new Block(it_block->second), msg_size + it_block->second.size);
+      ++it_block;
+    }
+    blocks_known_by_peer[peer_id] = DiffMaps(blocks_known_by_peer[peer_id], blocks_to_send);
+  }
+  blocks_to_broadcast.clear();
+  /* We won't relay any txs in the next iteration unless:
+  * a) this node creates a tx
+  * b) we receive a block with txs that are not present in our mempool
+  * c) we receive unconfirmed txs that are not present in our mempool
+  */
+  txs_to_broadcast.clear();
   // We will let each peer know about recent unconfirmed txs (but we won't send the txs that we know the peer already knows)
   for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
     int peer_id = *it_id;
@@ -61,9 +81,9 @@ void Node::generate_activity()
   long numberOfBytes = rand() & 100000;
   // FIXME: agregar datos del utxo que estamos gastando con esta transaccion.
   // el nodo deberia tener en su blockchain_data.json los datos de sus propios utxos
-  Transaction* message = new Transaction(my_id, numberOfBytes);
-  mempool.insert(std::make_pair(message->id, *message));
-  txs_to_broadcast.insert(std::make_pair(message->id, *message));
+  Transaction tx = Transaction(my_id, numberOfBytes);
+  mempool.insert(std::make_pair(tx.id, tx));
+  txs_to_broadcast.insert(std::make_pair(tx.id, tx));
 }
 
 void Node::process_messages()
@@ -77,10 +97,10 @@ void Node::process_messages()
       XBT_DEBUG("received %s from %d", payload->get_type_name().c_str(), payload->peer_id);
       switch (payload->get_type()) {
         case MESSAGE_BLOCK:
-          handle_new_block(static_cast<Block*>(data));
+          handle_new_block(peer_id, static_cast<Block*>(data));
           break;
         case UNCONFIRMED_TRANSACTIONS:
-          handle_unconfirmed_transactions(static_cast<UnconfirmedTransactions*>(data));
+          handle_unconfirmed_transactions(peer_id, static_cast<UnconfirmedTransactions*>(data));
           break;
         default:
           THROW_IMPOSSIBLE;
@@ -89,44 +109,47 @@ void Node::process_messages()
   }
 }
 
-void Node::handle_new_block(Block *block)
+void Node::handle_new_block(int relayed_by_peer_id, Block *message)
 {
+  Block block = Block(*message);
   try {
-    known_blocks.at(block->id);
+    known_blocks.at(block.id);
   } catch (const std::out_of_range& oor) {
     long previous_difficulty = known_blocks[blockchain_top];
-    known_blocks[block->id] = block->difficulty + previous_difficulty;
-    // The new transactions to broadcast will be the ones we didn't know of before
-    std::map<long, Transaction> txs_to_broadcast = DiffMaps(block->transactions, mempool);
+    known_blocks[block.id] = block.difficulty + previous_difficulty;
+    blocks_to_broadcast.insert(std::make_pair(block.id, block));
+    blocks_known_by_peer[relayed_by_peer_id].insert(std::make_pair(block.id, block));
+    // The unconfirmed transactions to broadcast will be the ones that didn't get confirmed in the current block
+    txs_to_broadcast = DiffMaps(mempool, block.transactions);
     // Remove from the transactions known by our peers those present in the mempool (because we will also remove the confirmed txs from the mempool)
     for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
       int peer_id = *it_id;
       txs_known_by_peer[peer_id] = DiffMaps(txs_known_by_peer[peer_id], mempool);
     }
     // Now that we know of txs that got confirmed we need to evict them from our mempool
-    mempool = DiffMaps(mempool, block->transactions);
+    mempool = DiffMaps(mempool, block.transactions);
     simgrid::s4u::this_actor::execute(get_time_to_process_block(block));
   }
 }
 
-double Node::get_time_to_process_block(Block* block)
+double Node::get_time_to_process_block(Block block)
 {
   // Coefficients for f(x) = c2*x^2 + c1*x + c0; where x is the block size and f(x) the time to process it
   double c2 = 3.4510e-03;
   double c1 = -3.3800e-01;
   double c0 = 4.0727e+03;
-  long x = block->size;
+  long x = block.size;
   double pre_processed_time = c2 * x * x + c1 * x + c0;
   double scale_factor = 1.16401e02;// We found out this is a good aproximation when comparing against the bitcoin reference client
   scale_factor = 1.16401e-02;
   return pre_processed_time * scale_factor;
 }
 
-void Node::handle_unconfirmed_transactions(UnconfirmedTransactions *message)
+void Node::handle_unconfirmed_transactions(int relayed_by_peer_id, UnconfirmedTransactions *message)
 {
   mempool = JoinMaps(mempool, message->unconfirmed_transactions);
   txs_to_broadcast = JoinMaps(txs_to_broadcast, message->unconfirmed_transactions);
-  txs_known_by_peer[message->peer_id] = JoinMaps(txs_known_by_peer[message->peer_id], message->unconfirmed_transactions);
+  txs_known_by_peer[relayed_by_peer_id] = JoinMaps(txs_known_by_peer[message->peer_id], message->unconfirmed_transactions);
   // Fix: find a more suitable way to calculate execution duration for unconfirmed txs
   simgrid::s4u::this_actor::execute(1e8 * message->unconfirmed_transactions.size());// work for .1 seconds for each transaction
 }

@@ -33,23 +33,13 @@ void Miner::generate_activity()
     return;
   }
   do_set_next_activity_time();
-  pending_block = new Block(my_id, blockchain_top, mempool);
+  // TODO: deberia pasarle la dificultad con la que estoy operando a Block. El bloque deberia crearse con la fecha actual tambien
+  Block* block = new Block(my_id, blockchain_top, mempool);
+  blocks_to_broadcast.insert(std::make_pair(block->id, *block));
+  // TODO: deberia hacer el set del nuevo top de la blockchain en un metodo de la clase Node, tipo set_new_tip(Block block)
+  // , en ese mismo metodo debería recalcular la dificultad actual si el bloque es multiplo de 2016
   long previous_difficulty = known_blocks[blockchain_top];
-  known_blocks[pending_block->id] = pending_block->difficulty + previous_difficulty;
-  blockchain_top = pending_block->id;
+  known_blocks[block->id] = block->difficulty + previous_difficulty;
+  blockchain_top = block->id;
   mempool = std::map<long, Transaction>();
-}
-
-void Miner::send_messages()
-{
-  Node::send_messages();
-  if (NULL != pending_block) {
-    for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
-      int peer_id = *it_id;
-      XBT_DEBUG("sending block to %d", peer_id);
-      simgrid::s4u::MailboxPtr mbox = get_peer_outgoing_mailbox(peer_id);
-      mbox->put_async(pending_block, msg_size + pending_block->size);
-    }
-    pending_block = NULL;
-  }
 }

@@ -13,6 +13,8 @@ public:
 
 protected:
   std::map<long, Transaction> mempool;// map of unconfirmed transactions: <txid, tx>
+  std::map<long, Block> blocks_to_broadcast;
+  std::map<int, std::map<long, Block>> blocks_known_by_peer;
   std::map<long, Transaction> txs_to_broadcast;
   std::map<int, std::map<long, Transaction>> txs_known_by_peer;
   std::map<long, std::set<long>> utxo;// map of <txid, [o0, ..., on]> where oi is an unspent oupoint corresponding to the tx with id txid
@@ -24,8 +26,6 @@ protected:
   void generate_activity();
   void send_messages();
   long compute_mempool_size();
-  void handle_new_block(Block *block);
-  void handle_unconfirmed_transactions(UnconfirmedTransactions *message);
   static int on_exit(void*, void*)
   {
     XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
@@ -42,8 +42,9 @@ private:
 
   void do_set_next_activity_time();
   void process_messages();
-  void notify_unconfirmed_transactions_if_needed();
-  double get_time_to_process_block(Block* block);
+  void handle_new_block(int relayed_by_peer_id, Block *message);
+  void handle_unconfirmed_transactions(int relayed_by_peer_id, UnconfirmedTransactions *message);
+  double get_time_to_process_block(Block block);
 };
 
 #endif /* NODE_HPP */
