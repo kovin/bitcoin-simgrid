@@ -3,6 +3,7 @@
 
 #include "simgrid/s4u.hpp"
 #include <cstdlib>
+#include <set>
 
 long lrand(long limit = 0);
 double frand();
@@ -29,6 +30,48 @@ std::map<KeyType, Value> DiffMaps(const std::map<KeyType, Value> & left, const s
 }
 
 template<typename KeyType, typename Value>
+std::set<KeyType> DiffMaps(const std::set<KeyType> & left, const std::map<KeyType, Value> & right)
+{
+  std::set<KeyType> result;
+  typename std::set<KeyType>::const_iterator il = left.begin();
+  typename std::map<KeyType, Value>::const_iterator ir = right.begin();
+  while (il != left.end())
+  {
+    if (ir == right.end() || *il < ir->first) {
+      result.insert(*il);
+      ++il;
+    } else if (ir != right.end()) {
+      if (*il == ir->first) {
+        ++il;
+      }
+      ++ir;
+    }
+  }
+  return result;
+}
+
+template<typename KeyType, typename Value>
+std::map<KeyType, Value> DiffMaps(const std::map<KeyType, Value> & left, const std::set<KeyType> & right)
+{
+  std::map<KeyType, Value> result;
+  typename std::map<KeyType, Value>::const_iterator il = left.begin();
+  typename std::set<KeyType>::const_iterator ir = right.begin();
+  while (il != left.end())
+  {
+    if (ir == right.end() || il->first < *ir) {
+      result.insert(std::make_pair(il->first, il->second));
+      ++il;
+    } else if (ir != right.end()) {
+      if (il->first == *ir) {
+        ++il;
+      }
+      ++ir;
+    }
+  }
+  return result;
+}
+
+template<typename KeyType, typename Value>
 std::map<KeyType, Value> JoinMaps(const std::map<KeyType, Value> & left, const std::map<KeyType, Value> & right)
 {
   std::map<KeyType, Value> result;
@@ -42,6 +85,26 @@ std::map<KeyType, Value> JoinMaps(const std::map<KeyType, Value> & left, const s
     }
     if (ir != right.end()) {
       result.insert(std::make_pair(ir->first, ir->second));
+      ++ir;
+    }
+  }
+  return result;
+}
+
+template<typename KeyType, typename Value>
+std::set<KeyType> JoinMaps(const std::set<KeyType> & left, const std::map<KeyType, Value> & right)
+{
+  std::set<KeyType> result;
+  typename std::set<KeyType>::const_iterator il = left.begin();
+  typename std::map<KeyType, Value>::const_iterator ir = right.begin();
+  while (il != left.end() || ir != right.end())
+  {
+    if (il != left.end()) {
+      result.insert(*il);
+      ++il;
+    }
+    if (ir != right.end()) {
+      result.insert(ir->first);
       ++ir;
     }
   }
