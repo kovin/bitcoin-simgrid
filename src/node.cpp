@@ -105,6 +105,7 @@ void Node::process_messages()
         default:
           THROW_IMPOSSIBLE;
       }
+      delete payload;
     }
   }
 }
