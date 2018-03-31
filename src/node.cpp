@@ -30,6 +30,11 @@ void Node::do_set_next_activity_time()
   next_activity_time = get_next_activity_time(event_probability, 24 * 60 * 60, txs_per_day);
 }
 
+/* We won't relay any messages in the next iteration unless:
+* a) this node creates a tx
+* b) we receive a block we didn't know about
+* c) we receive unconfirmed txs that are not present in our mempool
+*/
 void Node::send_messages()
 {
   // We will let each peer know about new blocks (but we won't send the blocks that we know the peer already knows)
@@ -43,15 +48,15 @@ void Node::send_messages()
       mbox->put_async(new Block(it_block->second), msg_size + it_block->second.size);
       ++it_block;
     }
-    blocks_known_by_peer[peer_id] = DiffMaps(blocks_known_by_peer[peer_id], blocks_to_send);
+    // Note: we never clear the blocks we know each peer knows about
+  }
+  typename std::map<long, Block>::const_iterator it_block = blocks_to_broadcast.begin();
+  while(it_block != blocks_to_broadcast.end()) {
+    // Remove from txs_to_broadcast the ones that got confirmed in the current block
+    txs_to_broadcast = DiffMaps(txs_to_broadcast, it_block->second.transactions);
+    ++it_block;
   }
   blocks_to_broadcast.clear();
-  /* We won't relay any txs in the next iteration unless:
-  * a) this node creates a tx
-  * b) we receive a block with txs that are not present in our mempool
-  * c) we receive unconfirmed txs that are not present in our mempool
-  */
-  txs_to_broadcast.clear();
   // We will let each peer know about recent unconfirmed txs (but we won't send the txs that we know the peer already knows)
   for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
     int peer_id = *it_id;
@@ -63,11 +68,6 @@ void Node::send_messages()
       mbox->put_async(message, msg_size + message->size);
     }
   }
-  /* We won't relay any txs in the next iteration unless:
-  * a) this node creates a tx
-  * b) we receive a block with txs that are not present in our mempool
-  * c) we receive unconfirmed txs that are not present in our mempool
-  */
   txs_to_broadcast.clear();
 }
 
@@ -81,9 +81,9 @@ void Node::generate_activity()
   long numberOfBytes = rand() & 100000;
   // FIXME: agregar datos del utxo que estamos gastando con esta transaccion.
   // el nodo deberia tener en su blockchain_data.json los datos de sus propios utxos
-  Transaction tx = Transaction(my_id, numberOfBytes);
-  mempool.insert(std::make_pair(tx.id, tx));
-  txs_to_broadcast.insert(std::make_pair(tx.id, tx));
+  std::map<long, Transaction> txs;
+  txs.insert(std::make_pair(my_id, Transaction(my_id, numberOfBytes)));
+  handle_unconfirmed_transactions(my_id, new UnconfirmedTransactions(my_id, txs));
 }
 
 void Node::process_messages()
@@ -114,24 +114,33 @@ void Node::handle_new_block(int relayed_by_peer_id, Block *message)
 {
   Block block = Block(*message);
   try {
+    // When a block arrives we only need to do something only if we didn't
+    // know about it before. So if this throws an out of range exception we
+    // have work to do :)
     known_blocks.at(block.id);
   } catch (const std::out_of_range& oor) {
+    if (relayed_by_peer_id != my_id) {
+      blocks_known_by_peer[relayed_by_peer_id].insert(block.id);
+      simgrid::s4u::this_actor::execute(get_time_to_process_block(block));
+    }
     long previous_difficulty = known_blocks[blockchain_top];
     known_blocks[block.id] = block.difficulty + previous_difficulty;
     blocks_to_broadcast.insert(std::make_pair(block.id, block));
-    blocks_known_by_peer[relayed_by_peer_id].insert(std::make_pair(block.id, block));
-    // The unconfirmed transactions to broadcast will be the ones that didn't get confirmed in the current block
-    txs_to_broadcast = DiffMaps(mempool, block.transactions);
-    // Remove from the transactions known by our peers those present in the mempool (because we will also remove the confirmed txs from the mempool)
+    // Remove from the unconfirmed transactions known by our peers those confirmed in the block we just received
     for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
       int peer_id = *it_id;
-      txs_known_by_peer[peer_id] = DiffMaps(txs_known_by_peer[peer_id], mempool);
+      txs_known_by_peer[peer_id] = DiffMaps(txs_known_by_peer[peer_id], block.transactions);
     }
     // Now that we know of txs that got confirmed we need to evict them from our mempool
     mempool = DiffMaps(mempool, block.transactions);
-    simgrid::s4u::this_actor::execute(get_time_to_process_block(block));
   }
 }
+
+// TODO: deberia hacer el set del nuevo top de la blockchain en un metodo de la clase Node, tipo set_new_tip(Block block)
+  // , en ese mismo metodo debería recalcular la dificultad actual si el bloque es multiplo de 2016
+  //long previous_difficulty = known_blocks[blockchain_top];
+  //known_blocks[block->id] = block->difficulty + previous_difficulty;
+  //blockchain_top = block->id;
 
 double Node::get_time_to_process_block(Block block)
 {
@@ -148,9 +157,13 @@ double Node::get_time_to_process_block(Block block)
 
 void Node::handle_unconfirmed_transactions(int relayed_by_peer_id, UnconfirmedTransactions *message)
 {
+  // The unconfirmed transactions to broadcast will be the ones I didn't know of before
+  txs_to_broadcast = JoinMaps(txs_to_broadcast, DiffMaps(message->unconfirmed_transactions, mempool));
+  // The unconfirmed transaction I'm aware of now include the ones I just received
   mempool = JoinMaps(mempool, message->unconfirmed_transactions);
-  txs_to_broadcast = JoinMaps(txs_to_broadcast, message->unconfirmed_transactions);
-  txs_known_by_peer[relayed_by_peer_id] = JoinMaps(txs_known_by_peer[message->peer_id], message->unconfirmed_transactions);
+  if (relayed_by_peer_id != my_id) {
+    txs_known_by_peer[relayed_by_peer_id] = JoinMaps(txs_known_by_peer[message->peer_id], message->unconfirmed_transactions);
+  }
   // Fix: find a more suitable way to calculate execution duration for unconfirmed txs
   simgrid::s4u::this_actor::execute(1e8 * message->unconfirmed_transactions.size());// work for .1 seconds for each transaction
 }

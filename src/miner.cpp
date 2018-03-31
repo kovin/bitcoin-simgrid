@@ -34,12 +34,5 @@ void Miner::generate_activity()
   }
   do_set_next_activity_time();
   // TODO: deberia pasarle la dificultad con la que estoy operando a Block. El bloque deberia crearse con la fecha actual tambien
-  Block* block = new Block(my_id, blockchain_top, mempool);
-  blocks_to_broadcast.insert(std::make_pair(block->id, *block));
-  // TODO: deberia hacer el set del nuevo top de la blockchain en un metodo de la clase Node, tipo set_new_tip(Block block)
-  // , en ese mismo metodo debería recalcular la dificultad actual si el bloque es multiplo de 2016
-  long previous_difficulty = known_blocks[blockchain_top];
-  known_blocks[block->id] = block->difficulty + previous_difficulty;
-  blockchain_top = block->id;
-  mempool = std::map<long, Transaction>();
+  handle_new_block(my_id, new Block(my_id, blockchain_top, mempool));
 }

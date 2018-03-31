@@ -14,9 +14,9 @@ public:
 protected:
   std::map<long, Transaction> mempool;// map of unconfirmed transactions: <txid, tx>
   std::map<long, Block> blocks_to_broadcast;
-  std::map<int, std::map<long, Block>> blocks_known_by_peer;
+  std::map<int, std::set<long>> blocks_known_by_peer;
   std::map<long, Transaction> txs_to_broadcast;
-  std::map<int, std::map<long, Transaction>> txs_known_by_peer;
+  std::map<int, std::set<long>> txs_known_by_peer;
   std::map<long, std::set<long>> utxo;// map of <txid, [o0, ..., on]> where oi is an unspent oupoint corresponding to the tx with id txid
   long blockchain_top = 0;// The block id corresponding to the top of the best chain so far // FIXME: take this from json bootstrap data
   std::map<long, long> known_blocks = {{0, 100}};// map of blocks we know about: <block-id, aggregated difficulty>
@@ -34,6 +34,7 @@ protected:
   }
   simgrid::s4u::MailboxPtr get_peer_incoming_mailbox(int peer_id);
   simgrid::s4u::MailboxPtr get_peer_outgoing_mailbox(int peer_id);
+  void handle_new_block(int relayed_by_peer_id, Block *message);
 
 private:
   double event_probability;
@@ -42,7 +43,6 @@ private:
 
   void do_set_next_activity_time();
   void process_messages();
-  void handle_new_block(int relayed_by_peer_id, Block *message);
   void handle_unconfirmed_transactions(int relayed_by_peer_id, UnconfirmedTransactions *message);
   double get_time_to_process_block(Block block);
 };
