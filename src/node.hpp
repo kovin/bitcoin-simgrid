@@ -13,13 +13,7 @@ public:
 
 protected:
   std::map<long, Transaction> mempool;// map of unconfirmed transactions: <txid, tx>
-  std::map<long, Block> blocks_to_broadcast;
-  std::map<int, std::set<long>> blocks_known_by_peer;
-  std::map<long, Transaction> txs_to_broadcast;
-  std::map<int, std::set<long>> txs_known_by_peer;
-  std::map<long, std::set<long>> utxo;// map of <txid, [o0, ..., on]> where oi is an unspent oupoint corresponding to the tx with id txid
   long blockchain_top = 0;// The block id corresponding to the top of the best chain so far // FIXME: take this from json bootstrap data
-  std::map<long, long> known_blocks = {{0, 100}};// map of blocks we know about: <block-id, aggregated difficulty>
 
   void init_from_args(std::vector<std::string> args);
   std::string get_node_data_filename(int id);
@@ -37,6 +31,12 @@ protected:
   void handle_new_block(int relayed_by_peer_id, Block *message);
 
 private:
+  std::map<long, Block> blocks_to_broadcast;
+  std::map<int, std::set<long>> blocks_known_by_peer;
+  std::map<long, Transaction> txs_to_broadcast;
+  std::map<int, std::set<long>> txs_known_by_peer;
+  std::map<long, std::set<long>> utxo;// map of <txid, [o0, ..., on]> where oi is an unspent oupoint corresponding to the tx with id txid
+  std::map<long, long> known_blocks = {{0, 100}};// map of blocks we know about: <block-id, aggregated difficulty>
   double event_probability;
   int txs_per_day;
   double next_activity_time;
