@@ -45,6 +45,8 @@ private:
   void process_messages();
   void handle_unconfirmed_transactions(int relayed_by_peer_id, UnconfirmedTransactions *message);
   double get_time_to_process_block(Block block);
+  void send_blocks();
+  void send_unconfirmed_transactions();
 };
 
 #endif /* NODE_HPP */

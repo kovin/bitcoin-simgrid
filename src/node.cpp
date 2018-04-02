@@ -37,7 +37,13 @@ void Node::do_set_next_activity_time()
 */
 void Node::send_messages()
 {
-  // We will let each peer know about new blocks (but we won't send the blocks that we know the peer already knows)
+  send_blocks();
+  send_unconfirmed_transactions();
+}
+
+void Node::send_blocks()
+{
+// We will let each peer know about new blocks (but we won't send the blocks that we know the peer already knows)
   for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
     int peer_id = *it_id;
     std::map<long, Block> blocks_to_send = DiffMaps(blocks_to_broadcast, blocks_known_by_peer[peer_id]);
@@ -48,15 +54,20 @@ void Node::send_messages()
       mbox->put_async(new Block(it_block->second), msg_size + it_block->second.size);
       ++it_block;
     }
-    // Note: we never clear the blocks we know each peer knows about
   }
   typename std::map<long, Block>::const_iterator it_block = blocks_to_broadcast.begin();
   while(it_block != blocks_to_broadcast.end()) {
-    // Remove from txs_to_broadcast the ones that got confirmed in the current block
+    // Remove from txs_to_broadcast the ones that got confirmed in this block
     txs_to_broadcast = DiffMaps(txs_to_broadcast, it_block->second.transactions);
     ++it_block;
   }
+  // Once we send a block we never relay it again (unless theres a block reorg). So we can clean blocks_known_by_peer & blocks_to_send
+  blocks_known_by_peer.clear();
   blocks_to_broadcast.clear();
+}
+
+void Node::send_unconfirmed_transactions()
+{
   // We will let each peer know about recent unconfirmed txs (but we won't send the txs that we know the peer already knows)
   for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
     int peer_id = *it_id;
@@ -68,6 +79,8 @@ void Node::send_messages()
       mbox->put_async(message, msg_size + message->size);
     }
   }
+  // Once we send a tx we never send it again (unless theres a block reorg). So we can clean txs_known_by_peer & txs_to_broadcast
+  txs_known_by_peer.clear();
   txs_to_broadcast.clear();
 }
 
@@ -94,7 +107,6 @@ void Node::process_messages()
     while (!mbox->empty()) {
       void* data = mbox->get();
       Message *payload = static_cast<Message*>(data);
-      XBT_DEBUG("received %s from %d", payload->get_type_name().c_str(), payload->peer_id);
       switch (payload->get_type()) {
         case MESSAGE_BLOCK:
           handle_new_block(peer_id, static_cast<Block*>(data));
@@ -118,8 +130,26 @@ void Node::handle_new_block(int relayed_by_peer_id, Block *message)
     // know about it before. So if this throws an out of range exception we
     // have work to do :)
     known_blocks.at(block.id);
+    XBT_DEBUG(
+      "received a known block from %d with %ld transactions",
+      relayed_by_peer_id,
+      block.transactions.size()
+    );
   } catch (const std::out_of_range& oor) {
+    long previous_mempool_size = mempool.size();
+    // Now that we know of txs that got confirmed we need to evict them from our mempool
+    mempool = DiffMaps(mempool, block.transactions);
+    long known_txs_that_got_confirmed = previous_mempool_size - mempool.size();
+    XBT_DEBUG(
+      "received a new block from %d with %ld transactions (%ld of them new). mempool size: %ld",
+      relayed_by_peer_id,
+      block.transactions.size(),
+      block.transactions.size() - known_txs_that_got_confirmed,
+      mempool.size()
+    );
     if (relayed_by_peer_id != my_id) {
+      // This is a block I didn't generate, so I have to add it to the list of blocks known
+      // by the peer who created it and I need to simulate the validation time
       blocks_known_by_peer[relayed_by_peer_id].insert(block.id);
       simgrid::s4u::this_actor::execute(get_time_to_process_block(block));
     }
@@ -131,8 +161,6 @@ void Node::handle_new_block(int relayed_by_peer_id, Block *message)
       int peer_id = *it_id;
       txs_known_by_peer[peer_id] = DiffMaps(txs_known_by_peer[peer_id], block.transactions);
     }
-    // Now that we know of txs that got confirmed we need to evict them from our mempool
-    mempool = DiffMaps(mempool, block.transactions);
   }
 }
 
@@ -157,11 +185,19 @@ double Node::get_time_to_process_block(Block block)
 
 void Node::handle_unconfirmed_transactions(int relayed_by_peer_id, UnconfirmedTransactions *message)
 {
+  std::map<long, Transaction> txs_we_didnt_know = DiffMaps(message->unconfirmed_transactions, mempool);
+  XBT_DEBUG(
+    "received %ld unconfirmed transactions (%ld of them new) from %d",
+    message->unconfirmed_transactions.size(),
+    txs_we_didnt_know.size(),
+    relayed_by_peer_id
+  );
   // The unconfirmed transactions to broadcast will be the ones I didn't know of before
-  txs_to_broadcast = JoinMaps(txs_to_broadcast, DiffMaps(message->unconfirmed_transactions, mempool));
+  txs_to_broadcast = JoinMaps(txs_to_broadcast, txs_we_didnt_know);
   // The unconfirmed transaction I'm aware of now include the ones I just received
   mempool = JoinMaps(mempool, message->unconfirmed_transactions);
   if (relayed_by_peer_id != my_id) {
+    // Now I need to update the txs that I know my peer knows about
     txs_known_by_peer[relayed_by_peer_id] = JoinMaps(txs_known_by_peer[message->peer_id], message->unconfirmed_transactions);
   }
   // Fix: find a more suitable way to calculate execution duration for unconfirmed txs
