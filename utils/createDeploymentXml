@@ -23,7 +23,8 @@ random.seed(args.seed)
 
 def create_nodes(root):
     node_types = ['miner' if random.random() * 100 < args.miners_ratio else 'node' for x in range(0, args.nodes_count)]
-    G = nx.connected_watts_strogatz_graph(args.nodes_count, args.peers_count, .2, tries=100, seed=args.seed)
+    #G = nx.connected_watts_strogatz_graph(args.nodes_count, args.peers_count, .2, tries=100, seed=args.seed)
+    G = nx.barabasi_albert_graph(args.nodes_count, args.peers_count, seed=args.seed)
     for node_id in G.nodes():
         node = et.Element('actor')
         node.set('host', 'node-' + str(node_id))
