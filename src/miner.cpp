@@ -34,5 +34,7 @@ void Miner::generate_activity()
   }
   do_set_next_activity_time();
   // TODO: deberia pasarle la dificultad con la que estoy operando a Block. El bloque deberia crearse con la fecha actual tambien
-  handle_new_block(my_id, new Block(my_id, blockchain_top, mempool));
+  Block *block = new Block(my_id, blockchain_top, mempool);
+  handle_new_block(my_id, block);
+  delete block;
 }

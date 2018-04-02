@@ -96,7 +96,9 @@ void Node::generate_activity()
   // el nodo deberia tener en su blockchain_data.json los datos de sus propios utxos
   std::map<long, Transaction> txs;
   txs.insert(std::make_pair(my_id, Transaction(my_id, numberOfBytes)));
-  handle_unconfirmed_transactions(my_id, new UnconfirmedTransactions(my_id, txs));
+  UnconfirmedTransactions *my_unconfirmed_txs = new UnconfirmedTransactions(my_id, txs);
+  handle_unconfirmed_transactions(my_id, my_unconfirmed_txs);
+  delete my_unconfirmed_txs;
 }
 
 void Node::process_messages()
