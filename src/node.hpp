@@ -39,7 +39,7 @@ private:
   std::map<long, long> known_blocks = {{0, 100}};// map of blocks we know about: <block-id, aggregated difficulty>
   double event_probability;
   int txs_per_day;
-  double next_activity_time;
+  double next_activity_time = 0;
 
   void do_set_next_activity_time();
   void process_messages();

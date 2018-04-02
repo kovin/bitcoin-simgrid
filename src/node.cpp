@@ -27,7 +27,11 @@ std::string Node::get_node_data_filename(int id) {
 void Node::do_set_next_activity_time()
 {
   XBT_DEBUG("event_probability: %f, txs_per_day: %d", event_probability, txs_per_day);
-  next_activity_time = get_next_activity_time(event_probability, 24 * 60 * 60, txs_per_day);
+  // Between the moment we set the previous next_activity_time, we checked it and generated the
+  // corresponding activity, we wasted some time that we need to substract from next_activity_time
+  // if we expect to accomplish the number of txs_per_day
+  double wasted_time = simgrid::s4u::Engine::getClock() - next_activity_time;
+  next_activity_time = get_next_activity_time(event_probability, 24 * 60 * 60, txs_per_day) - wasted_time;
 }
 
 /* We won't relay any messages in the next iteration unless:
