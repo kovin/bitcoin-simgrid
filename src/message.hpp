@@ -54,6 +54,7 @@ class Block : public Message
     long parent_id;
     std::map<long, Transaction> transactions;
     long difficulty;
+    double time;
     Block (int peer_id, long parent_id, std::map<long, Transaction> transactions) : Message(peer_id), parent_id(parent_id), transactions(transactions) {
         size += 1000000;
         for (auto const& idAndTransaction : transactions)
@@ -61,6 +62,7 @@ class Block : public Message
           size += idAndTransaction.second.size;
         }
         difficulty = lrand(BLOCK_DIFFICULTY_THRESHOLD);
+        time = simgrid::s4u::Engine::getClock();
     };
 
     e_message_type get_type()
