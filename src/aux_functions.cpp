@@ -24,8 +24,8 @@ long long llrand(long long limit)
 }
 
 std::default_random_engine re;
-double frand()
+double frand(double limit)
 {
-  std::uniform_real_distribution<double> unif(0, 1);
+  std::uniform_real_distribution<double> unif(0, limit ? limit : 1);
  return unif(re);
 }

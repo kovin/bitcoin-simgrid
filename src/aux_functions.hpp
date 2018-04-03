@@ -7,7 +7,7 @@
 
 long lrand(long limit = 0);
 long long llrand(long long limit = 0);
-double frand();
+double frand(double limit = 0);
 
 template<typename KeyType, typename Value>
 std::set<KeyType> JustKeys(const std::map<KeyType, Value> & some_map)
