@@ -131,50 +131,115 @@ void Node::process_messages()
 void Node::handle_new_block(int relayed_by_peer_id, Block *message)
 {
   Block block = Block(*message);
-  try {
+  if (known_blocks.find(block.id) == known_blocks.end()) {
+    // I didn't know about this block, I need to check if it represent a new top for the blockchain
+    if (blockhain_tip_updated(block)) {
+      long previous_mempool_size = mempool.size();
+      // Now that we know of txs that got confirmed we need to evict them from our mempool
+      mempool = DiffMaps(mempool, block.transactions);
+      long known_txs_that_got_confirmed = previous_mempool_size - mempool.size();
+      XBT_DEBUG(
+        "received a new block from %d with %ld transactions (%ld of them new). mempool size: %ld",
+        relayed_by_peer_id,
+        block.transactions.size(),
+        block.transactions.size() - known_txs_that_got_confirmed,
+        mempool.size()
+      );
+      blocks_to_broadcast.insert(std::make_pair(block.id, block));
+      if (relayed_by_peer_id != my_id) {
+        // This is a block I didn't generate, so I have to add it to the list of blocks known
+        // by the peer who created it and I need to simulate the validation time
+        blocks_known_by_peer[relayed_by_peer_id].insert(block.id);
+        simgrid::s4u::this_actor::execute(get_time_to_process_block(block));
+      }
+      // Remove from the unconfirmed transactions known by our peers those confirmed in the block we just received
+      for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
+        int peer_id = *it_id;
+        txs_known_by_peer[peer_id] = DiffMaps(txs_known_by_peer[peer_id], block.transactions);
+      }
+    } else {
+      XBT_DEBUG(
+        "received an orphan block from %d with %ld transactions",
+        relayed_by_peer_id,
+        block.transactions.size()
+      );
+    }
+  } else {
     // When a block arrives we only need to do something only if we didn't
-    // know about it before. So if this throws an out of range exception we
-    // have work to do :)
-    known_blocks.at(block.id);
+    // know about it before.
     XBT_DEBUG(
       "received a known block from %d with %ld transactions",
       relayed_by_peer_id,
       block.transactions.size()
     );
-  } catch (const std::out_of_range& oor) {
-    long previous_mempool_size = mempool.size();
-    // Now that we know of txs that got confirmed we need to evict them from our mempool
-    mempool = DiffMaps(mempool, block.transactions);
-    long known_txs_that_got_confirmed = previous_mempool_size - mempool.size();
-    XBT_DEBUG(
-      "received a new block from %d with %ld transactions (%ld of them new). mempool size: %ld",
-      relayed_by_peer_id,
-      block.transactions.size(),
-      block.transactions.size() - known_txs_that_got_confirmed,
-      mempool.size()
-    );
-    if (relayed_by_peer_id != my_id) {
-      // This is a block I didn't generate, so I have to add it to the list of blocks known
-      // by the peer who created it and I need to simulate the validation time
-      blocks_known_by_peer[relayed_by_peer_id].insert(block.id);
-      simgrid::s4u::this_actor::execute(get_time_to_process_block(block));
-    }
-    long previous_difficulty = known_blocks[blockchain_top];
-    known_blocks[block.id] = block.difficulty + previous_difficulty;
-    blocks_to_broadcast.insert(std::make_pair(block.id, block));
-    // Remove from the unconfirmed transactions known by our peers those confirmed in the block we just received
-    for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
-      int peer_id = *it_id;
-      txs_known_by_peer[peer_id] = DiffMaps(txs_known_by_peer[peer_id], block.transactions);
-    }
   }
 }
 
-// TODO: deberia hacer el set del nuevo top de la blockchain en un metodo de la clase Node, tipo set_new_tip(Block block)
-  // , en ese mismo metodo debería recalcular la dificultad actual si el bloque es multiplo de 2016
-  //long previous_difficulty = known_blocks[blockchain_top];
-  //known_blocks[block->id] = block->difficulty + previous_difficulty;
-  //blockchain_top = block->id;
+bool Node::blockchain_tip_updated(Block block)
+{
+  std::map<long, KnownBlock>::iterator it = known_blocks.find(block.parent_id);
+  if (it == known_blocks.end()) {
+    XBT_DEBUG("received an unknown block with an unknown parent");
+    return false;
+  }
+  long agregated_difficulty = block.difficulty + it->second.agregated_difficulty;
+  KnownBlock new_known_block = KnownBlock(block.parent_id, agregated_difficulty, block.time, JustKeys(block.transactions));
+  known_blocks.insert(std::make_pair(block.id, new_known_block));
+  long current_agregated_difficulty = known_blocks.find(blockchain_tip)->second.agregated_difficulty;
+  if (agregated_difficulty > current_agregated_difficulty) {
+    if (block.parent_id != blockchain_tip) {
+      reorg_txs(block.id, blockchain_tip);
+    }
+    blockchain_tip = block.id;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+// When a block reorganization occurs I need to "forget" about known transactions
+// that had got confirmed in (now) orphaned blocks. Then I need to learn about the
+// transactions that I didn't consider before because the belonged to orphaned blocks
+void Node::reorg_txs(int new_tip_id, int old_tip_id)
+{
+  int common_parent_id = find_common_parent_id(new_tip_id, old_tip_id);
+  int current_block_id = old_tip_id;
+  std::set<long> known_txs_to_discard;
+  while (current_block_id != common_parent_id)
+  {
+    KnownBlock known_block = known_blocks.find(current_block_id)->second;
+    known_txs_to_discard = JoinSets(known_txs_to_discard, known_block.txs_ids);
+    current_block_id = known_block.parent_id;
+  }
+  known_txs_ids = DiffSets(known_txs_ids, known_txs_to_discard);
+  current_block_id = new_tip_id;
+  std::set<long> known_txs_to_add;
+  while (current_block_id != common_parent_id)
+  {
+    KnownBlock known_block = known_blocks.find(current_block_id)->second;
+    known_txs_to_add = JoinSets(known_txs_to_add, known_block.txs_ids);
+    current_block_id = known_block.parent_id;
+  }
+  known_txs_ids = JoinSets(known_txs_ids, known_txs_to_add);
+  XBT_DEBUG(
+    "reorganizing blocks. knwon txs discarded %ld. known txs added %ld",
+    known_txs_to_discard.size(),
+    known_txs_to_add.size()
+  );
+}
+
+int Node::find_common_parent_id(int new_parent_tip_id, int old_parent_tip_id)
+{
+  std::set<int> parents_for_new_tip = {new_parent_tip_id};
+  std::set<int> parents_for_old_tip = {old_parent_tip_id};
+  while (InsersectSets(parents_for_new_tip, parents_for_old_tip).size() == 0) {
+    new_parent_tip_id = known_blocks.find(new_parent_tip_id)->second.parent_id;
+    old_parent_tip_id = known_blocks.find(old_parent_tip_id)->second.parent_id;
+    parents_for_new_tip.insert(new_parent_tip_id);
+    parents_for_old_tip.insert(old_parent_tip_id);
+  }
+  return *(InsersectSets(parents_for_new_tip, parents_for_old_tip).begin());
+}
 
 double Node::get_time_to_process_block(Block block)
 {
@@ -191,7 +256,8 @@ double Node::get_time_to_process_block(Block block)
 
 void Node::handle_unconfirmed_transactions(int relayed_by_peer_id, UnconfirmedTransactions *message)
 {
-  std::map<long, Transaction> txs_we_didnt_know = DiffMaps(message->unconfirmed_transactions, mempool);
+  std::map<long, Transaction> txs_we_didnt_know = DiffMaps(message->unconfirmed_transactions, known_txs_ids);
+  known_txs_ids = JoinMaps(known_txs_ids, message->unconfirmed_transactions);
   XBT_DEBUG(
     "received %ld unconfirmed transactions (%ld of them new) from %d",
     message->unconfirmed_transactions.size(),
@@ -232,4 +298,11 @@ simgrid::s4u::MailboxPtr Node::get_peer_outgoing_mailbox(int peer_id)
 {
   std::string mboxName = std::string("from:") + std::to_string(my_id) + "-to:" + std::to_string(peer_id);
   return simgrid::s4u::Mailbox::byName(mboxName);
+}
+
+int Node::on_exit(void*, void*)
+{
+  XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
+  XBT_DEBUG("shut down");
+  return 0;
 }
