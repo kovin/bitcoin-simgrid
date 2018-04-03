@@ -9,4 +9,8 @@ static const double SLEEP_DURATION = .1;
 static const unsigned int INVENTORY_BROADCAST_INTERVAL = 5;
 static const unsigned int INVENTORY_BROADCAST_MAX = 7 * INVENTORY_BROADCAST_INTERVAL;
 
+static const unsigned int INTERVAL_BETWEEN_BLOCKS_IN_SECONDS = 600;
+
+static const unsigned int INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS = 4;
+
 #endif /* MAGIC_CONSTANTS */
