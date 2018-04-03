@@ -13,10 +13,11 @@ protected:
 
 private:
   long long hashrate;
+  long long previous_difficulty;
   double next_activity_time;
 
-  // We set next time accoriding to the probability of this miner finding a block in the next 10 minutes
   void do_set_next_activity_time();
+  double get_event_probability(int timespan);
 };
 
 #endif /* MINER_HPP */
