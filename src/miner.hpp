@@ -12,7 +12,6 @@ protected:
   void generate_activity();
 
 private:
-  long long difficulty;
   long long hashrate;
   double next_activity_time;
 

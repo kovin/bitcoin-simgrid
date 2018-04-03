@@ -13,6 +13,8 @@ Node::Node(std::vector<std::string> args)
 void Node::init_from_args(std::vector<std::string> args)
 {
   BaseNode::init_from_args(args);
+  difficulty = node_data["difficulty"].get<long long>();
+  xbt_assert(difficulty > 0, "Network difficulty must be greater than 0, got %lld", difficulty);
   event_probability = node_data["event_probability"].get<double>();
   xbt_assert(event_probability >= 0 && event_probability <= 1, "Probability of an event should be in the range [0, 1]");
   txs_per_day = node_data["txs_per_day"].get<int>();
@@ -177,20 +179,42 @@ void Node::handle_new_block(int relayed_by_peer_id, Block *message)
 
 bool Node::blockchain_tip_updated(Block block)
 {
-  std::map<long, KnownBlock>::iterator it = known_blocks.find(block.parent_id);
+  std::map<int, KnownBlock>::iterator it = known_blocks.find(block.parent_height);
   if (it == known_blocks.end()) {
     XBT_DEBUG("received an unknown block with an unknown parent");
     return false;
   }
   long agregated_difficulty = block.difficulty + it->second.agregated_difficulty;
-  KnownBlock new_known_block = KnownBlock(block.parent_id, agregated_difficulty, block.time, JustKeys(block.transactions));
-  known_blocks.insert(std::make_pair(block.id, new_known_block));
-  long current_agregated_difficulty = known_blocks.find(blockchain_tip)->second.agregated_difficulty;
+  KnownBlock new_known_block = KnownBlock(block.height, block.parent_height, agregated_difficulty, block.time, JustKeys(block.transactions));
+  //known_blocks.insert(std::make_pair(block.height, new_known_block));
+  long current_agregated_difficulty = known_blocks.find(blockchain_height)->second.agregated_difficulty;
   if (agregated_difficulty > current_agregated_difficulty) {
-    if (block.parent_id != blockchain_tip) {
-      reorg_txs(block.id, blockchain_tip);
+    if (block.parent_height != blockchain_height) {
+      XBT_DEBUG("reorg_txs");
+      return false;// FIXME support for txs reorganization
+      //reorg_txs(block.height, blockchain_height);
     }
-    blockchain_tip = block.id;
+    // FIXME: this shouldn't be here (we should uncomment the first instance of this line in this method)
+    known_blocks.insert(std::make_pair(block.height, new_known_block));
+    blockchain_height = block.height;
+    if ((blockchain_height % INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS) == 0) {
+      double expected_time = INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS * INTERVAL_BETWEEN_BLOCKS_IN_SECONDS;
+      double base_time = known_blocks.find(blockchain_height - INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS)->second.time;
+      double time_for_tip = known_blocks.find(blockchain_height)->second.time;
+      double actual_time = time_for_tip - base_time;
+      long long new_difficulty = difficulty * expected_time / actual_time;
+      XBT_DEBUG(
+        "blockchain_height %ld previous difficulty %lld, new difficulty %lld expected_time %lf time_for_tip %lf base_time %lf actual time %lf",
+        blockchain_height,
+        difficulty,
+        new_difficulty,
+        expected_time,
+        time_for_tip,
+        base_time,
+        actual_time
+      );
+      difficulty = new_difficulty;
+    }
     return true;
   } else {
     return false;
@@ -200,25 +224,25 @@ bool Node::blockchain_tip_updated(Block block)
 // When a block reorganization occurs I need to "forget" about known transactions
 // that had got confirmed in (now) orphaned blocks. Then I need to learn about the
 // transactions that I didn't consider before because the belonged to orphaned blocks
-void Node::reorg_txs(int new_tip_id, int old_tip_id)
+void Node::reorg_txs(int new_tip_height, int old_tip_height)
 {
-  int common_parent_id = find_common_parent_id(new_tip_id, old_tip_id);
-  int current_block_id = old_tip_id;
+  int common_parent_height = find_common_parent_height(new_tip_height, old_tip_height);
+  int current_block_height = old_tip_height;
   std::set<long> known_txs_to_discard;
-  while (current_block_id != common_parent_id)
+  while (current_block_height != common_parent_height)
   {
-    KnownBlock known_block = known_blocks.find(current_block_id)->second;
+    KnownBlock known_block = known_blocks.find(current_block_height)->second;
     known_txs_to_discard = JoinSets(known_txs_to_discard, known_block.txs_ids);
-    current_block_id = known_block.parent_id;
+    current_block_height = known_block.parent_height;
   }
   known_txs_ids = DiffSets(known_txs_ids, known_txs_to_discard);
-  current_block_id = new_tip_id;
+  current_block_height = new_tip_height;
   std::set<long> known_txs_to_add;
-  while (current_block_id != common_parent_id)
+  while (current_block_height != common_parent_height)
   {
-    KnownBlock known_block = known_blocks.find(current_block_id)->second;
+    KnownBlock known_block = known_blocks.find(current_block_height)->second;
     known_txs_to_add = JoinSets(known_txs_to_add, known_block.txs_ids);
-    current_block_id = known_block.parent_id;
+    current_block_height = known_block.parent_height;
   }
   known_txs_ids = JoinSets(known_txs_ids, known_txs_to_add);
   XBT_DEBUG(
@@ -228,17 +252,17 @@ void Node::reorg_txs(int new_tip_id, int old_tip_id)
   );
 }
 
-int Node::find_common_parent_id(int new_parent_tip_id, int old_parent_tip_id)
+int Node::find_common_parent_height(int new_parent_tip_height, int old_parent_tip_height)
 {
-  std::set<int> parents_for_new_tip = {new_parent_tip_id};
-  std::set<int> parents_for_old_tip = {old_parent_tip_id};
-  while (InsersectSets(parents_for_new_tip, parents_for_old_tip).size() == 0) {
-    new_parent_tip_id = known_blocks.find(new_parent_tip_id)->second.parent_id;
-    old_parent_tip_id = known_blocks.find(old_parent_tip_id)->second.parent_id;
-    parents_for_new_tip.insert(new_parent_tip_id);
-    parents_for_old_tip.insert(old_parent_tip_id);
+  std::set<int> parents_for_new_height = {new_parent_tip_height};
+  std::set<int> parents_for_old_height = {old_parent_tip_height};
+  while (InsersectSets(parents_for_new_height, parents_for_old_height).size() == 0) {
+    new_parent_tip_height = known_blocks.find(new_parent_tip_height)->second.parent_height;
+    old_parent_tip_height = known_blocks.find(old_parent_tip_height)->second.parent_height;
+    parents_for_new_height.insert(new_parent_tip_height);
+    parents_for_old_height.insert(old_parent_tip_height);
   }
-  return *(InsersectSets(parents_for_new_tip, parents_for_old_tip).begin());
+  return *(InsersectSets(parents_for_new_height, parents_for_old_height).begin());
 }
 
 double Node::get_time_to_process_block(Block block)

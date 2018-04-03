@@ -4,9 +4,8 @@
 #include "aux_functions.hpp"
 #include <set>
 
-const long BLOCK_DIFFICULTY_THRESHOLD = 10000;
-
-typedef enum {
+typedef enum
+{
   MESSAGE_BLOCK,
   MESSAGE_TRANSACTION,
   UNCONFIRMED_TRANSACTIONS
@@ -51,17 +50,20 @@ class Transaction : public Message
 class Block : public Message
 {
   public:
-    long parent_id;
+    int height;
+    int parent_height;
     std::map<long, Transaction> transactions;
-    long difficulty;
+    long long difficulty;
     double time;
-    Block (int peer_id, long parent_id, std::map<long, Transaction> transactions) : Message(peer_id), parent_id(parent_id), transactions(transactions) {
+    Block (int peer_id, int height, int parent_height, long long difficulty_limit, std::map<long, Transaction> transactions)
+    : Message(peer_id), height(height), parent_height(parent_height), transactions(transactions)
+    {
         size += 1000000;
         for (auto const& idAndTransaction : transactions)
         {
           size += idAndTransaction.second.size;
         }
-        difficulty = lrand(BLOCK_DIFFICULTY_THRESHOLD);
+        difficulty = llrand(difficulty_limit);
         time = simgrid::s4u::Engine::getClock();
     };
 
