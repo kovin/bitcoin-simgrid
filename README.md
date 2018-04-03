@@ -30,7 +30,7 @@ bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/defa
 ```
 ### Setting the simulation duration time (in seconds)
 ```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --duration-time=30000
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --simulation-duration 7200
 
 ```
 ### With debug information
