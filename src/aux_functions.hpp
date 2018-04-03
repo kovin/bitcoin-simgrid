@@ -6,6 +6,7 @@
 #include <set>
 
 long lrand(long limit = 0);
+long long llrand(long long limit = 0);
 double frand();
 
 template<typename KeyType, typename Value>
