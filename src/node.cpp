@@ -133,7 +133,7 @@ void Node::handle_new_block(int relayed_by_peer_id, Block *message)
   Block block = Block(*message);
   if (known_blocks.find(block.id) == known_blocks.end()) {
     // I didn't know about this block, I need to check if it represent a new top for the blockchain
-    if (blockhain_tip_updated(block)) {
+    if (blockchain_tip_updated(block)) {
       long previous_mempool_size = mempool.size();
       // Now that we know of txs that got confirmed we need to evict them from our mempool
       mempool = DiffMaps(mempool, block.transactions);
@@ -223,8 +223,8 @@ void Node::reorg_txs(int new_tip_id, int old_tip_id)
   known_txs_ids = JoinSets(known_txs_ids, known_txs_to_add);
   XBT_DEBUG(
     "reorganizing blocks. knwon txs discarded %ld. known txs added %ld",
-    known_txs_to_discard.size(),
-    known_txs_to_add.size()
+    DiffSets(known_txs_to_discard, known_txs_to_add).size(),
+    DiffSets(known_txs_to_add, known_txs_to_discard).size()
   );
 }
 
