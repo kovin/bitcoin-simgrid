@@ -33,7 +33,12 @@ void Node::do_set_next_activity_time()
   // corresponding activity, we wasted some time that we need to substract from next_activity_time
   // if we expect to accomplish the number of txs_per_day
   double wasted_time = simgrid::s4u::Engine::getClock() - next_activity_time;
-  next_activity_time = get_next_activity_time(event_probability, 24 * 60 * 60, txs_per_day) - wasted_time;
+  next_activity_time = calc_next_activity_time(event_probability, 24 * 60 * 60, txs_per_day) - wasted_time;
+}
+
+double Node::get_next_activity_time()
+{
+  return next_activity_time;
 }
 
 /* We won't relay any messages in the next iteration unless:
@@ -133,15 +138,16 @@ void Node::process_messages()
 void Node::handle_new_block(int relayed_by_peer_id, Block *message)
 {
   Block block = Block(*message);
-  if (known_blocks.find(block.id) == known_blocks.end()) {
-    // I didn't know about this block, I need to check if it represent a new top for the blockchain
+  if (known_blocks_by_id.find(block.id) == known_blocks_by_id.end()) {
+    // I didn't know about this block, I need to check if it represents a new top for the blockchain
     if (blockchain_tip_updated(block)) {
       long previous_mempool_size = mempool.size();
       // Now that we know of txs that got confirmed we need to evict them from our mempool
       mempool = DiffMaps(mempool, block.transactions);
       long known_txs_that_got_confirmed = previous_mempool_size - mempool.size();
       XBT_DEBUG(
-        "received a new block from %d with %ld transactions (%ld of them new). mempool size: %ld",
+        "received block %ld from %d with %ld transactions (%ld of them new). mempool size: %ld",
+        block.id,
         relayed_by_peer_id,
         block.transactions.size(),
         block.transactions.size() - known_txs_that_got_confirmed,
@@ -161,7 +167,8 @@ void Node::handle_new_block(int relayed_by_peer_id, Block *message)
       }
     } else {
       XBT_DEBUG(
-        "received an orphan block from %d with %ld transactions",
+        "received a new block %ld from %d with %ld txs which doesn't represent a new best chain",
+        block.id,
         relayed_by_peer_id,
         block.transactions.size()
       );
@@ -170,47 +177,61 @@ void Node::handle_new_block(int relayed_by_peer_id, Block *message)
     // When a block arrives we only need to do something only if we didn't
     // know about it before.
     XBT_DEBUG(
-      "received a known block from %d with %ld transactions",
+      "received a known block %ld from %d with %ld transactions",
+      block.id,
       relayed_by_peer_id,
       block.transactions.size()
     );
+  }
+  // Check if this block is the parent of current orphan blocks
+  if (orphan_blocks.find(block.id) != orphan_blocks.end()) {
+    std::vector<Block> orphans = orphan_blocks[block.id];
+    orphan_blocks[block.id].clear();
+    for(std::vector<Block>::iterator it_orphan = orphans.begin(); it_orphan != orphans.end(); it_orphan++) {
+      XBT_DEBUG(
+        "found parent %ld for %ld",
+        block.id,
+        it_orphan->id
+      );
+      Block orphan = *it_orphan;
+      handle_new_block(my_id, &orphan);
+    }
   }
 }
 
 bool Node::blockchain_tip_updated(Block block)
 {
-  std::map<int, KnownBlock>::iterator it = known_blocks.find(block.parent_height);
-  if (it == known_blocks.end()) {
-    XBT_DEBUG("received an unknown block with an unknown parent");
+  std::map<long, KnownBlock>::iterator it = known_blocks_by_id.find(block.parent_id);
+  if (it == known_blocks_by_id.end()) {
+    orphan_blocks[block.parent_id].push_back(block);
+    XBT_DEBUG("received orphan block %ld", block.id);
     return false;
   }
-  long agregated_difficulty = block.difficulty + it->second.agregated_difficulty;
-  KnownBlock new_known_block = KnownBlock(block.height, block.parent_height, agregated_difficulty, block.time, JustKeys(block.transactions));
-  //known_blocks.insert(std::make_pair(block.height, new_known_block));
-  long current_agregated_difficulty = known_blocks.find(blockchain_height)->second.agregated_difficulty;
+  long long agregated_difficulty = block.difficulty + it->second.agregated_difficulty;
+  KnownBlock new_known_block = KnownBlock(block.height, block.parent_id, agregated_difficulty, block.time, JustKeys(block.transactions));
+  known_blocks_by_id.insert(std::make_pair(block.id, new_known_block));
+  long long current_agregated_difficulty = known_blocks.find(blockchain_height)->second.agregated_difficulty;
+  // Check if we found a new best chain
   if (agregated_difficulty > current_agregated_difficulty) {
-    if (block.parent_height != blockchain_height) {
+    if (block.parent_id != blockchain_tip) {
       XBT_DEBUG("reorg_txs");
-      return false;// FIXME support for txs reorganization
-      //reorg_txs(block.height, blockchain_height);
+      reorg_txs(block.id, blockchain_tip);
     }
-    // FIXME: this shouldn't be here (we should uncomment the first instance of this line in this method)
-    known_blocks.insert(std::make_pair(block.height, new_known_block));
+    blockchain_tip = block.id;
     blockchain_height = block.height;
+    known_blocks.insert(std::make_pair(block.height, new_known_block));
     if ((blockchain_height % INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS) == 0) {
       double expected_time = INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS * INTERVAL_BETWEEN_BLOCKS_IN_SECONDS;
       double base_time = known_blocks.find(blockchain_height - INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS)->second.time;
-      double time_for_tip = known_blocks.find(blockchain_height)->second.time;
-      double actual_time = time_for_tip - base_time;
-      long long new_difficulty = difficulty * expected_time / actual_time;
+      double actual_time = block.time - base_time;
+      long long new_difficulty = block.network_difficulty * expected_time / actual_time;
       XBT_DEBUG(
-        "blockchain_height %ld previous difficulty %lld, new difficulty %lld expected_time %lf time_for_tip %lf base_time %lf actual time %lf",
+        "blockchain_height %d previous difficulty %lld, new difficulty %lld block date %lf expected time %lf actual time %lf",
         blockchain_height,
         difficulty,
         new_difficulty,
+        block.time,
         expected_time,
-        time_for_tip,
-        base_time,
         actual_time
       );
       difficulty = new_difficulty;
@@ -223,26 +244,28 @@ bool Node::blockchain_tip_updated(Block block)
 
 // When a block reorganization occurs I need to "forget" about known transactions
 // that had got confirmed in (now) orphaned blocks. Then I need to learn about the
-// transactions that I didn't consider before because the belonged to orphaned blocks
-void Node::reorg_txs(int new_tip_height, int old_tip_height)
+// transactions that I didn't consider before because they belonged to orphaned blocks
+void Node::reorg_txs(long new_tip_id, long old_tip_id)
 {
-  int common_parent_height = find_common_parent_height(new_tip_height, old_tip_height);
-  int current_block_height = old_tip_height;
+  long common_parent_id = find_common_parent_id(new_tip_id, old_tip_id);
+  XBT_DEBUG(
+    "common_parent_id is %ld",
+    common_parent_id
+  );
+  long current_block_id = old_tip_id;
   std::set<long> known_txs_to_discard;
-  while (current_block_height != common_parent_height)
-  {
-    KnownBlock known_block = known_blocks.find(current_block_height)->second;
+  while (current_block_id != common_parent_id) {
+    KnownBlock known_block = known_blocks_by_id.find(current_block_id)->second;
     known_txs_to_discard = JoinSets(known_txs_to_discard, known_block.txs_ids);
-    current_block_height = known_block.parent_height;
+    current_block_id = known_block.parent_id;
   }
   known_txs_ids = DiffSets(known_txs_ids, known_txs_to_discard);
-  current_block_height = new_tip_height;
+  current_block_id = new_tip_id;
   std::set<long> known_txs_to_add;
-  while (current_block_height != common_parent_height)
-  {
-    KnownBlock known_block = known_blocks.find(current_block_height)->second;
+  while (current_block_id != common_parent_id) {
+    KnownBlock known_block = known_blocks_by_id.find(current_block_id)->second;
     known_txs_to_add = JoinSets(known_txs_to_add, known_block.txs_ids);
-    current_block_height = known_block.parent_height;
+    current_block_id = known_block.parent_id;
   }
   known_txs_ids = JoinSets(known_txs_ids, known_txs_to_add);
   XBT_DEBUG(
@@ -252,17 +275,17 @@ void Node::reorg_txs(int new_tip_height, int old_tip_height)
   );
 }
 
-int Node::find_common_parent_height(int new_parent_tip_height, int old_parent_tip_height)
+long Node::find_common_parent_id(long new_parent_tip_id, long old_parent_tip_id)
 {
-  std::set<int> parents_for_new_height = {new_parent_tip_height};
-  std::set<int> parents_for_old_height = {old_parent_tip_height};
-  while (InsersectSets(parents_for_new_height, parents_for_old_height).size() == 0) {
-    new_parent_tip_height = known_blocks.find(new_parent_tip_height)->second.parent_height;
-    old_parent_tip_height = known_blocks.find(old_parent_tip_height)->second.parent_height;
-    parents_for_new_height.insert(new_parent_tip_height);
-    parents_for_old_height.insert(old_parent_tip_height);
+  std::set<long> parents_for_new_id = {new_parent_tip_id};
+  std::set<long> parents_for_old_id = {old_parent_tip_id};
+  while (InsersectSets(parents_for_new_id, parents_for_old_id).size() == 0) {
+    new_parent_tip_id = known_blocks_by_id.find(new_parent_tip_id)->second.parent_id;
+    old_parent_tip_id = known_blocks_by_id.find(old_parent_tip_id)->second.parent_id;
+    parents_for_new_id.insert(new_parent_tip_id);
+    parents_for_old_id.insert(old_parent_tip_id);
   }
-  return *(InsersectSets(parents_for_new_height, parents_for_old_height).begin());
+  return *(InsersectSets(parents_for_new_id, parents_for_old_id).begin());
 }
 
 double Node::get_time_to_process_block(Block block)
@@ -304,8 +327,7 @@ long Node::compute_mempool_size()
 {
   long result = 0;
   typename std::map<long, Transaction>::const_iterator it = mempool.begin();
-  while (it != mempool.end())
-  {
+  while (it != mempool.end()) {
     result += it->second.size;
     ++it;
   }

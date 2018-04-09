@@ -51,20 +51,20 @@ class Block : public Message
 {
   public:
     int height;
-    int parent_height;
+    long parent_id;
     std::map<long, Transaction> transactions;
     long long difficulty;
+    long long network_difficulty;
     double time;
-    Block (int peer_id, int height, int parent_height, long long difficulty_limit, std::map<long, Transaction> transactions)
-    : Message(peer_id), height(height), parent_height(parent_height), transactions(transactions)
+    Block (int peer_id, int height, double time, long parent_id, long long network_difficulty, std::map<long, Transaction> transactions)
+    : Message(peer_id), height(height), time(time), parent_id(parent_id), network_difficulty(network_difficulty), transactions(transactions)
     {
         size += 1000000;
         for (auto const& idAndTransaction : transactions)
         {
           size += idAndTransaction.second.size;
         }
-        difficulty = llrand(difficulty_limit);
-        time = simgrid::s4u::Engine::getClock();
+        difficulty = llrand(network_difficulty);
     };
 
     e_message_type get_type()
