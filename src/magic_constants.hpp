@@ -11,6 +11,6 @@ static const unsigned int INVENTORY_BROADCAST_MAX = 7 * INVENTORY_BROADCAST_INTE
 
 static const unsigned int INTERVAL_BETWEEN_BLOCKS_IN_SECONDS = 600;
 
-static const unsigned int INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS = 4;
+static const unsigned int INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS = 2016;
 
 #endif /* MAGIC_CONSTANTS */
