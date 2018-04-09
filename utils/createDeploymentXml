@@ -15,6 +15,7 @@ parser.add_argument('--nodes_count', type = int, help = 'the number of nodes inv
 parser.add_argument('--peers_count', type = int, help = 'the number of peers each node will have', required = True)
 parser.add_argument('--txs_per_day', type = int, help = 'number of expected total transactions in the system per day', required = True)
 parser.add_argument('--difficulty', type = int, help = 'the current network difficulty to mine a block', required = True)
+parser.add_argument('--global_hashrate', type = int, help = 'the current global network hashrate', required = True)
 parser.add_argument('--miners_ratio', type = int, help = 'a number between 0 an 100 for the ratio of miner in relation to nodes_count', required = False, default = 5)
 parser.add_argument('--seed', type = int, help = 'Seed for random module', required = False)
 
@@ -38,7 +39,7 @@ def create_nodes(root):
         }
         node_type = node_types[node_id]
         if node_type == 'miner':
-            node_data['hashrate'] = (25130091717 / miners_count) * 10 ** 9
+            node_data['hashrate'] = (node_data['global_hashrate'] / miners_count) * 10 ** 9
         node.set('function', node_type)
         node_id_argument = et.Element('argument')
         node_id_argument.set('value', str(node_id))

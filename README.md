@@ -60,5 +60,5 @@ bitcoin-simgrid$ utils/createPlatformXml --file=platform/300_nodes_dijkstracache
 
 ## Deployment generation
 ```bash
-bitcoin-simgrid$ utils/createDeploymentXml --nodes_count=300 --peers_count=8 --data_dir=platform/300_nodes_deployment --miners_ratio=10 --txs_per_day=200000 --difficulty=3462542391191
+bitcoin-simgrid$ utils/createDeploymentXml --nodes_count=300 --peers_count=8 --data_dir=platform/300_nodes_deployment --miners_ratio=10 --txs_per_day=200000 --difficulty=3462542391191 --global_hashrate=25130091717
 ```
