@@ -30,6 +30,7 @@ protected:
   simgrid::s4u::MailboxPtr get_peer_incoming_mailbox(int peer_id);
   simgrid::s4u::MailboxPtr get_peer_outgoing_mailbox(int peer_id);
   void handle_new_block(int relayed_by_peer_id, Block *message);
+  Transaction create_transaction();
   static int on_exit(void*, void*);
 
 private:
@@ -49,6 +50,7 @@ private:
   double get_time_to_process_block(Block block);
   void send_blocks();
   void send_unconfirmed_transactions();
+  void handle_orphan_blocks(Block block);
   bool blockchain_tip_updated(Block block);
   void reorg_txs(long new_tip_id, long old_tip_id);
   long find_common_parent_id(long new_tip_id, long old_tip_id);

@@ -101,15 +101,21 @@ void Node::generate_activity()
     return;
   }
   do_set_next_activity_time();
+  std::map<long, Transaction> txs;
+  Transaction tx = create_transaction();
+  txs.insert(std::make_pair(tx.id, tx));
+  UnconfirmedTransactions *my_unconfirmed_txs = new UnconfirmedTransactions(my_id, txs);
+  handle_unconfirmed_transactions(my_id, my_unconfirmed_txs);
+  delete my_unconfirmed_txs;
+}
+
+Transaction Node::create_transaction()
+{
   XBT_DEBUG("creating tx");
   long numberOfBytes = rand() & 100000;
   // FIXME: agregar datos del utxo que estamos gastando con esta transaccion.
   // el nodo deberia tener en su blockchain_data.json los datos de sus propios utxos
-  std::map<long, Transaction> txs;
-  txs.insert(std::make_pair(my_id, Transaction(my_id, numberOfBytes)));
-  UnconfirmedTransactions *my_unconfirmed_txs = new UnconfirmedTransactions(my_id, txs);
-  handle_unconfirmed_transactions(my_id, my_unconfirmed_txs);
-  delete my_unconfirmed_txs;
+  return Transaction(my_id, numberOfBytes);
 }
 
 void Node::process_messages()
@@ -183,6 +189,11 @@ void Node::handle_new_block(int relayed_by_peer_id, Block *message)
       block.transactions.size()
     );
   }
+  handle_orphan_blocks(block);
+}
+
+void Node::handle_orphan_blocks(Block block)
+{
   // Check if this block is the parent of current orphan blocks
   if (orphan_blocks.find(block.id) != orphan_blocks.end()) {
     std::vector<Block> orphans = orphan_blocks[block.id];

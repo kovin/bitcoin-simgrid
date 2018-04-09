@@ -43,6 +43,8 @@ void Miner::generate_activity()
     return;
   }
   do_set_next_activity_time();
+  Transaction tx = create_transaction();
+  mempool.insert(std::make_pair(tx.id, tx));
   Block *block = new Block(my_id, blockchain_height + 1, simgrid::s4u::Engine::getClock(), blockchain_tip, difficulty, mempool);
   handle_new_block(my_id, block);
   delete block;
