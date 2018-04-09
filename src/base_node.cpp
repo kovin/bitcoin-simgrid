@@ -2,18 +2,6 @@
 
 XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
 
-void BaseNode::operator()()
-{
-while (simgrid::s4u::Engine::getClock() < SIMULATION_DURATION) {
-  generate_activity();
-  process_messages();
-  send_messages();
-  simgrid::s4u::this_actor::sleep_for(SLEEP_DURATION);
-}
-XBT_DEBUG("shutting down");
-simgrid::s4u::Actor::killAll();
-}
-
 void BaseNode::init_from_args(std::vector<std::string> args)
 {
   xbt_assert((args.size() - 1) == 1, "Expecting 1 parameter from the XML deployment file but got %zu", (args.size() - 1));
@@ -26,7 +14,24 @@ void BaseNode::init_from_args(std::vector<std::string> args)
   xbt_assert(my_peers.size() > 0, "You should define at least one peer");
 }
 
-double BaseNode::get_next_activity_time(double probability, int timespan, int events_per_timespan)
+void BaseNode::operator()()
 {
-  return simgrid::s4u::Engine::getClock() + (-log(1 - frand()) / probability) * timespan / events_per_timespan;
+  while (simgrid::s4u::Engine::getClock() < SIMULATION_DURATION) {
+    generate_activity();
+    process_messages();
+    send_messages();
+    double sleep_duration = std::min(SLEEP_DURATION, get_next_activity_time() - simgrid::s4u::Engine::getClock());
+    simgrid::s4u::this_actor::sleep_for(sleep_duration);
+  }
+  XBT_DEBUG("shutting down");
+  simgrid::s4u::Actor::killAll();
+}
+
+double BaseNode::calc_next_activity_time(double probability, int timespan, int events_per_timespan)
+{
+  if (events_per_timespan > 0) {
+    return simgrid::s4u::Engine::getClock() + (-log(1 - frand()) / probability) * timespan / events_per_timespan;
+  } else {
+    return SIMULATION_DURATION;
+  }
 }

@@ -34,7 +34,8 @@ protected:
   *   timespan: is the amount of seconds, or time frame, in which we are interested. For example a day duration for the events of transactions per day
   *   events_per_timespan: is the amount of event that we expect to occur during the considered timespan. For example 10K transactions per day
   */
-  double get_next_activity_time(double probability, int timespan, int events_per_timespan);
+  double calc_next_activity_time(double probability, int timespan, int events_per_timespan);
+  virtual double get_next_activity_time() = 0;
   virtual std::string get_node_data_filename(int id) = 0;
   virtual void generate_activity() = 0;
   virtual void process_messages() = 0;
