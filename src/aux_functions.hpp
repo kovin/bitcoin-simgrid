@@ -176,6 +176,8 @@ std::set<KeyType> InsersectSets(const std::set<KeyType> & left, const std::set<K
   {
     if (*il == *ir) {
       result.insert(*il);
+      ++il;
+      ++ir;
     } else if (*il < *ir) {
       ++il;
     } else {
