@@ -11,6 +11,7 @@ public:
 
   explicit Node() {};
   explicit Node(std::vector<std::string> args);
+  double get_next_activity_time();
 
 protected:
   long long difficulty;
@@ -22,7 +23,6 @@ protected:
   std::map<int, KnownBlock> known_blocks = {{0, KnownBlock(0, 0, 0, 0, {})}};// map of blocks we know about: <block-height, aggregated difficulty>
   std::map<long, KnownBlock> known_blocks_by_id = {{0, KnownBlock(0, 0, 0, 0, {})}};// map of blocks we know about: <block-id, aggregated difficulty>
 
-  double get_next_activity_time();
   std::string get_node_data_filename(int id);
   void generate_activity();
   void send_messages();
@@ -40,8 +40,6 @@ private:
   std::map<int, std::set<long>> txs_known_by_peer;
   std::map<long, std::set<long>> utxo;// map of <txid, [o0, ..., on]> where oi is an unspent oupoint corresponding to the tx with id txid
   std::map<long, std::vector<Block>> orphan_blocks;
-  double event_probability;
-  int txs_per_day;
   double next_activity_time = 0;
 
   void do_set_next_activity_time();

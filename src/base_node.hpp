@@ -21,13 +21,14 @@ class BaseNode
 {
 public:
   void operator()();
+  int get_id();
+  virtual double get_next_activity_time() = 0;
 protected:
   int my_id;
   std::vector<int> my_peers;
   json node_data;
 
   virtual void init_from_args(std::vector<std::string> args);
-  virtual double get_next_activity_time() = 0;
   virtual std::string get_node_data_filename(int id) = 0;
   virtual void generate_activity() = 0;
   virtual void process_messages() = 0;

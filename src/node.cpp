@@ -1,6 +1,9 @@
 #include "node.hpp"
+#include "ctg.hpp"
 
 using json = nlohmann::json;
+
+simgrid::xbt::Extension<simgrid::s4u::Actor, CTG> CTG::EXTENSION_ID;
 
 XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
 
@@ -13,12 +16,9 @@ Node::Node(std::vector<std::string> args)
 void Node::init_from_args(std::vector<std::string> args)
 {
   BaseNode::init_from_args(args);
+  simgrid::s4u::Actor::by_pid(simgrid::s4u::this_actor::get_pid())->extension_set(new CTG());
   difficulty = node_data["difficulty"].get<long long>();
   xbt_assert(difficulty > 0, "Network difficulty must be greater than 0, got %lld", difficulty);
-  event_probability = node_data["event_probability"].get<double>();
-  xbt_assert(event_probability >= 0 && event_probability <= 1, "Probability of an event should be in the range [0, 1]");
-  txs_per_day = node_data["txs_per_day"].get<int>();
-  xbt_assert(txs_per_day >= 0, "Transaction per day can't be negative");
   do_set_next_activity_time();
 }
 
@@ -28,12 +28,7 @@ std::string Node::get_node_data_filename(int id) {
 
 void Node::do_set_next_activity_time()
 {
-  XBT_DEBUG("event_probability: %f, txs_per_day: %d", event_probability, txs_per_day);
-  // Between the moment we set the previous next_activity_time, we checked it and generated the
-  // corresponding activity, we wasted some time that we need to substract from next_activity_time
-  // if we expect to accomplish the number of txs_per_day
-  double wasted_time = simgrid::s4u::Engine::getClock() - next_activity_time;
-  next_activity_time = calc_next_activity_time(event_probability, 24 * 60 * 60, txs_per_day) - wasted_time;
+  next_activity_time = simgrid::s4u::Actor::by_pid(simgrid::s4u::this_actor::get_pid())->extension<CTG>()->get_next_activity_time(this);
 }
 
 double Node::get_next_activity_time()
