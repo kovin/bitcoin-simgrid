@@ -6,9 +6,9 @@
 class Miner : public Node {
 public:
   explicit Miner(std::vector<std::string> args);
+  double get_next_activity_time();
 
 protected:
-double get_next_activity_time();
   void init_from_args(std::vector<std::string> args);
   void generate_activity();
 
