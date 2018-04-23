@@ -5,7 +5,7 @@ XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
 Miner::Miner(std::vector<std::string> args): Node::Node()
 {
   init_from_args(args);
-  simgrid::s4u::this_actor::onExit((int_f_pvoid_pvoid_t) on_exit, NULL);
+  simgrid::s4u::this_actor::on_exit((int_f_pvoid_pvoid_t) on_exit, NULL);
 }
 
 void Miner::init_from_args(std::vector<std::string> args)

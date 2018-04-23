@@ -24,5 +24,5 @@ void BaseNode::operator()()
     simgrid::s4u::this_actor::sleep_for(sleep_duration);
   }
   XBT_DEBUG("shutting down");
-  simgrid::s4u::Actor::killAll();
+  simgrid::s4u::Actor::kill_all();
 }
