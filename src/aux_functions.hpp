@@ -8,6 +8,13 @@
 long lrand(long limit = 0);
 long long llrand(long long limit = 0);
 double frand(double limit = 0);
+  /*
+  * Returns the next expected arrival of an activity event following a poisson distribution where:
+  *   probability: chance of an event by this actor in the next second
+  *   timespan: is the amount of seconds, or time frame, in which we are interested. For example a day duration for the events of transactions per day
+  *   events_per_timespan: is the amount of event that we expect to occur during the considered timespan. For example 10K transactions per day
+  */
+double calc_next_activity_time(double probability, int timespan, int events_per_timespan);
 
 template<typename KeyType, typename Value>
 std::set<KeyType> JustKeys(const std::map<KeyType, Value> & some_map)

@@ -1,4 +1,5 @@
 #include "aux_functions.hpp"
+#include "magic_constants.hpp"
 #include <random>
 
 long lrand(long limit)
@@ -28,4 +29,13 @@ double frand(double limit)
 {
   std::uniform_real_distribution<double> unif(0, limit ? limit : 1);
  return unif(re);
+}
+
+double calc_next_activity_time(double probability, int timespan, int events_per_timespan)
+{
+  if (events_per_timespan > 0) {
+    return simgrid::s4u::Engine::getClock() + (-log(1 - frand()) / probability) * timespan / events_per_timespan;
+  } else {
+    return SIMULATION_DURATION;
+  }
 }

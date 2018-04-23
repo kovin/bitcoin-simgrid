@@ -1,6 +1,9 @@
 #ifndef MAGIC_CONSTANTS
 #define MAGIC_CONSTANTS
 
+// This it the total time in seconds we are goind to allow the simulation to run
+extern unsigned int SIMULATION_DURATION;
+
 // We try to imitate ThreadMessageHandler from the reference client  https://github.com/bitcoin/bitcoin/blob/a7324bd/src/net.cpp
 // In ThreadMessageHandler we first process all pending messages and then send all needed messages to our peers once every 100 milliseconds
 static const double SLEEP_DURATION = .1;
