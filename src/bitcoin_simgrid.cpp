@@ -2,12 +2,15 @@
 #include "bitcoin_simgrid.hpp"
 #include "node.hpp"
 #include "miner.hpp"
-#include "ctg.hpp"
 
 XBT_LOG_NEW_DEFAULT_CATEGORY(bitcoin_simgrid, "bitcoing-simgrid logs");
 
 // This is the directory where the nodes should go to look for their bootstrapping data
 std::string deployment_directory;
+
+// This will be the single instance in charge of centralizing the generation of transactions
+CTG* ctg;
+
 // By default we are goind to simulate an hour, but this can be changes using the --simulation-duration argument
 unsigned int SIMULATION_DURATION = 3600;
 
@@ -40,6 +43,8 @@ int main(int argc, char *argv[])
   e.registerFunction<Miner>("miner");
   e.loadPlatform(argv[1]);
   deployment_directory = std::string(argv[2]);
+  // This will be the single instance in charge of centralizing the generation of transactions
+  ctg = new CTG();
   std::string deployment_file = deployment_directory + std::string("/deployment.xml");
   e.loadDeployment(deployment_file.c_str());
   e.run();

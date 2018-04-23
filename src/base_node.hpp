@@ -2,7 +2,6 @@
 #define BASE_NODE_HPP
 
 #include "simgrid/s4u.hpp"
-#include "bitcoin_simgrid.hpp"
 #include "magic_constants.hpp"
 #include "message.hpp"
 #include "aux_functions.hpp"

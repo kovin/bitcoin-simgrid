@@ -1,5 +1,6 @@
 #include "node.hpp"
 #include "ctg.hpp"
+#include "bitcoin_simgrid.hpp"
 
 using json = nlohmann::json;
 
@@ -16,7 +17,7 @@ Node::Node(std::vector<std::string> args)
 void Node::init_from_args(std::vector<std::string> args)
 {
   BaseNode::init_from_args(args);
-  simgrid::s4u::Actor::by_pid(simgrid::s4u::this_actor::get_pid())->extension_set(new CTG());
+  simgrid::s4u::Actor::by_pid(simgrid::s4u::this_actor::get_pid())->extension_set(ctg);
   difficulty = node_data["difficulty"].get<long long>();
   xbt_assert(difficulty > 0, "Network difficulty must be greater than 0, got %lld", difficulty);
   do_set_next_activity_time();
