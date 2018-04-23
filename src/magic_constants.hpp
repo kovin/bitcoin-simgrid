@@ -16,4 +16,6 @@ static const unsigned int INTERVAL_BETWEEN_BLOCKS_IN_SECONDS = 600;
 
 static const unsigned int INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS = 2016;
 
+static const unsigned int AVERAGE_BYTES_PER_TX = 1500;
+
 #endif /* MAGIC_CONSTANTS */

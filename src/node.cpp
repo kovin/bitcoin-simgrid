@@ -112,7 +112,7 @@ void Node::generate_activity()
 Transaction Node::create_transaction()
 {
   XBT_DEBUG("creating tx");
-  long numberOfBytes = rand() & 100000;
+  long numberOfBytes = rand() & AVERAGE_BYTES_PER_TX;
   // FIXME: agregar datos del utxo que estamos gastando con esta transaccion.
   // el nodo deberia tener en su blockchain_data.json los datos de sus propios utxos
   return Transaction(my_id, numberOfBytes);
