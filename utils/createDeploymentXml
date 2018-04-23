@@ -22,24 +22,31 @@ parser.add_argument('--seed', type = int, help = 'Seed for random module', requi
 args = parser.parse_args()
 random.seed(args.seed)
 
+def create_ctg_data():
+    ctg_data = {
+        'nodes_count': args.nodes_count,
+        'txs_per_day': args.txs_per_day
+    }
+    ctg_data_file = open('%s/ctg_data' % args.data_dir , 'w')
+    json.dump(ctg_data, ctg_data_file)
+    ctg_data_file.close()
+
 def create_nodes(root):
     node_types = ['miner' if random.random() * 100 < args.miners_ratio else 'node' for x in range(0, args.nodes_count)]
     miners_count = sum([1 if node_type == 'miner' else 0 for node_type in node_types])
-    #G = nx.connected_watts_strogatz_graph(args.nodes_count, args.peers_count, .2, tries=100, seed=args.seed)
-    G = nx.barabasi_albert_graph(args.nodes_count, args.peers_count, seed=args.seed)
+    G = nx.connected_watts_strogatz_graph(args.nodes_count, args.peers_count, .2, tries=100, seed=args.seed)
+    #G = nx.barabasi_albert_graph(args.nodes_count, args.peers_count, seed=args.seed)
     for node_id in G.nodes():
         node = et.Element('actor')
         node.set('host', 'node-' + str(node_id))
         peers = [peer_id for peer_id in list(G.adj[node_id])]
         node_data = {
             'peers': map(int, peers),
-            'event_probability': 1.0 / args.nodes_count,
-            'txs_per_day': args.txs_per_day,
             'difficulty': args.difficulty
         }
         node_type = node_types[node_id]
         if node_type == 'miner':
-            node_data['hashrate'] = (node_data['global_hashrate'] / miners_count) * 10 ** 9
+            node_data['hashrate'] = (args.global_hashrate / miners_count) * 10 ** 9
         node.set('function', node_type)
         node_id_argument = et.Element('argument')
         node_id_argument.set('value', str(node_id))
@@ -57,6 +64,7 @@ def create():
     root = et.Element('platform')
     root.set('version', '4.1')
     create_directory()
+    create_ctg_data()
     create_nodes(root)
     tree = et.ElementTree(root)
     tree.docinfo.system_url = 'http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd'
