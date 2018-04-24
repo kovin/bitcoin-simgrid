@@ -14,8 +14,6 @@ CTG* ctg;
 // By default we are goind to simulate an hour, but this can be changes using the --simulation-duration argument
 unsigned int SIMULATION_DURATION = 3600;
 
-Stats STATS_MONITOR = Stats();
-
 void parse_and_validate_args(int argc, char *argv[]) {
   xbt_assert(argc <= 6, "Usage: %s platform_file deployment_directory [-debug] [--simulation-duration <seconds>]", argv[0]);
   if (argc > 3) {
@@ -48,6 +46,5 @@ int main(int argc, char *argv[])
   std::string deployment_file = deployment_directory + std::string("/deployment.xml");
   e.loadDeployment(deployment_file.c_str());
   e.run();
-  XBT_DEBUG("STATS_MONITOR\n\ttxs number: %ld", STATS_MONITOR.get_avg_txs_number());
   return 0;
 }
