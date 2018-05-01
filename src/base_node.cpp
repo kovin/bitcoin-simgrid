@@ -26,3 +26,8 @@ void BaseNode::operator()()
   XBT_DEBUG("shutting down");
   simgrid::s4u::Actor::kill_all();
 }
+
+int BaseNode::get_id()
+{
+  return my_id;
+}

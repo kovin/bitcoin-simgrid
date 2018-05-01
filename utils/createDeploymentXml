@@ -8,6 +8,9 @@ import random
 import json
 import os
 import shutil
+import enum
+
+DistributionType = enum.Enum("DistributionType", ("uniform", "exponential"))
 
 parser = argparse.ArgumentParser(description = 'Create a platform xml for the bitcoin-simgrid project')
 parser.add_argument('--data_dir', type = str, help = 'the directory for the produced deployment xml and individual nodes data json files', required = True)
@@ -18,6 +21,9 @@ parser.add_argument('--difficulty', type = int, help = 'the current network diff
 parser.add_argument('--global_hashrate', type = int, help = 'the current global network hashrate', required = True)
 parser.add_argument('--miners_ratio', type = int, help = 'a number between 0 an 100 for the ratio of miner in relation to nodes_count', required = False, default = 5)
 parser.add_argument('--seed', type = int, help = 'Seed for random module', required = False)
+parser.add_argument('--distribution_type', type = str, action = "store", choices = tuple(t.name for t in DistributionType), default = DistributionType.uniform.name)
+parser.add_argument('--distribution_lambda', type = float, default = 1.0)
+
 
 args = parser.parse_args()
 random.seed(args.seed)
@@ -25,8 +31,14 @@ random.seed(args.seed)
 def create_ctg_data():
     ctg_data = {
         'nodes_count': args.nodes_count,
-        'txs_per_day': args.txs_per_day
+        'txs_per_day': args.txs_per_day,
+        'mode': 'model',
+        'distribution': {
+            'type': args.distribution_type
+        }
     }
+    if args.distribution_type == DistributionType.exponential.name:
+        ctg_data['distribution']['lambda'] = args.distribution_lambda
     ctg_data_file = open('%s/ctg_data' % args.data_dir , 'w')
     json.dump(ctg_data, ctg_data_file)
     ctg_data_file.close()

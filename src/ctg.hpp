@@ -14,8 +14,12 @@ public:
   double get_next_activity_time(Node *node);
 
 private:
-    double event_probability;
+    int nodes_count;
     int txs_per_day;
+    bool usingModelMode;
+    std::vector<double> event_probability;
+    void compute_exponential_distribution(json ctg_data);
+    void compute_uniform_distribution(json ctg_data);
 };
 
 #endif /* CTG_HPP */
