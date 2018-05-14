@@ -9,43 +9,117 @@ import json
 import os
 import shutil
 import enum
+import datetime
+from baseconverter import hexconv
 
+ActivityGenerationType = enum.Enum("ActivityGenerationType", ("trace", "model"))
 DistributionType = enum.Enum("DistributionType", ("uniform", "exponential"))
 
 parser = argparse.ArgumentParser(description = 'Create a platform xml for the bitcoin-simgrid project')
 parser.add_argument('--data_dir', type = str, help = 'the directory for the produced deployment xml and individual nodes data json files', required = True)
 parser.add_argument('--nodes_count', type = int, help = 'the number of nodes involved in the simulation', required = True)
 parser.add_argument('--peers_count', type = int, help = 'the number of peers each node will have', required = True)
+parser.add_argument('--activity_generation_type', type = str, action = "store", choices = tuple(t.name for t in ActivityGenerationType), default = ActivityGenerationType.model.name)
+parser.add_argument('--trace_dir', type = str, help = 'the directory for the produced deployment xml and individual nodes data json files', required = False)
 parser.add_argument('--txs_per_day', type = int, help = 'number of expected total transactions in the system per day', required = True)
 parser.add_argument('--difficulty', type = int, help = 'the current network difficulty to mine a block', required = True)
 parser.add_argument('--global_hashrate', type = int, help = 'the current global network hashrate', required = True)
 parser.add_argument('--miners_ratio', type = int, help = 'a number between 0 an 100 for the ratio of miner in relation to nodes_count', required = False, default = 5)
-parser.add_argument('--seed', type = int, help = 'Seed for random module', required = False)
-parser.add_argument('--distribution_type', type = str, action = "store", choices = tuple(t.name for t in DistributionType), default = DistributionType.uniform.name)
-parser.add_argument('--distribution_lambda', type = float, default = 1.0)
-
+parser.add_argument('--distribution_type', type = str, help = 'Whether to use a uniform or exponential distribution when assigning txs generation among nodes', action = "store", choices = tuple(t.name for t in DistributionType), default = DistributionType.uniform.name)
+parser.add_argument('--distribution_lambda', type = float, help = 'The lambda to assign txs generation among nodes following an exponential distribution', default = 1.0)
+parser.add_argument('--seed', type = int, help = 'Seed for the random number generator', required = False, default = 0)
 
 args = parser.parse_args()
 random.seed(args.seed)
 
-def create_ctg_data():
+def create_ctg_data(trace_data):
     ctg_data = {
         'nodes_count': args.nodes_count,
-        'txs_per_day': args.txs_per_day,
-        'mode': 'model',
-        'distribution': {
-            'type': args.distribution_type
-        }
+        'mode': args.activity_generation_type
     }
-    if args.distribution_type == DistributionType.exponential.name:
-        ctg_data['distribution']['lambda'] = args.distribution_lambda
+    if args.activity_generation_type == ActivityGenerationType.model.name:
+        ctg_data['distribution'] = get_ctg_model_data()
+    else:
+        ctg_data['trace'] = trace_data['txs']
     ctg_data_file = open('%s/ctg_data' % args.data_dir , 'w')
     json.dump(ctg_data, ctg_data_file)
     ctg_data_file.close()
 
-def create_nodes(root):
+def get_ctg_model_data():
+    data = {
+        'txs_per_day': args.txs_per_day,
+        'type': args.distribution_type
+    }
+    if args.distribution_type == DistributionType.exponential.name:
+        data['lambda'] = args.distribution_lambda
+    return data
+
+def get_trace_data():
+    if args.activity_generation_type == ActivityGenerationType.model.name:
+        return None
+    raw_data = {'txs': [], 'blocks': []}
+    earliest_tx = None
+    blocks_dir = '%s/blocks' % args.trace_dir
+    blocks_to_parse = [f for f in os.listdir(blocks_dir) if os.path.isfile(os.path.join(blocks_dir, f))]
+    for block in blocks_to_parse:
+        block_file_path = '%s/%s' % (blocks_dir, block)
+        block_data = json.load(open(block_file_path))
+        raw_data['blocks'].append({
+            'hash': block_data['hash'],
+            'received': parse_date(block_data['received_time']),
+            'difficulty': nbits_to_difficulty(block_data['bits'])
+        })
+        txids = block_data['txids']
+        for txid in txids:
+            tx_file_path = '%s/txs/%s' % (args.trace_dir, txid)
+            tx_data = json.load(open(tx_file_path))
+            if tx_data['block_index'] == 0:
+                continue
+            received = parse_date(tx_data['received'])
+            confirmed = parse_date(tx_data['confirmed'])
+            if earliest_tx is None or received < earliest_tx:
+                earliest_tx = received
+            raw_data['txs'].append({
+                'hash': txid,
+                'received': received,
+                'confirmed': confirmed
+            })
+    data = {'txs': [], 'blocks': []}
+    for tx in raw_data['txs']:
+        data['txs'].append({
+            'hash': tx['hash'],
+            'received': (tx['received'] - earliest_tx).total_seconds(),
+            'confirmed': (tx['confirmed'] - earliest_tx).total_seconds()
+        })
+    data['txs'] = sorted(data['txs'], key = lambda tx: tx['received'])
+    for block in raw_data['blocks']:
+        data['blocks'].append({
+            'hash': block['hash'],
+            'received': (block['received'] - earliest_tx).total_seconds(),
+            'difficulty': block['difficulty']
+        })
+    data['blocks'] = sorted(data['blocks'], key = lambda block: block['received'])
+    data['difficulty'] = data['blocks'][0]['difficulty'] if len(data['blocks']) > 0 else 0
+    return data
+
+def nbits_to_difficulty(nbits):
+    nbits = hexconv.from_decimal(nbits)
+    number_of_bytes = hexconv.to_decimal(nbits[:2]) * 2
+    target_prefix = nbits[2:]
+    target = '%s%s' % (target_prefix, '0' * (number_of_bytes - len(target_prefix)))
+    base_target = 'FFFF0000000000000000000000000000000000000000000000000000'
+    return hexconv.to_decimal(base_target) / hexconv.to_decimal(target)
+
+def parse_date(string_date):
+    try:
+        return datetime.datetime.strptime(string_date, '%Y-%m-%dT%H:%M:%S.%fZ')
+    except ValueError:
+        return datetime.datetime.strptime(string_date, '%Y-%m-%dT%H:%M:%SZ')
+
+def create_nodes(root, trace_data, difficulty):
     node_types = ['miner' if random.random() * 100 < args.miners_ratio else 'node' for x in range(0, args.nodes_count)]
     miners_count = sum([1 if node_type == 'miner' else 0 for node_type in node_types])
+    miner_id = 0
     G = nx.connected_watts_strogatz_graph(args.nodes_count, args.peers_count, .2, tries=100, seed=args.seed)
     #G = nx.barabasi_albert_graph(args.nodes_count, args.peers_count, seed=args.seed)
     for node_id in G.nodes():
@@ -54,11 +128,19 @@ def create_nodes(root):
         peers = [peer_id for peer_id in list(G.adj[node_id])]
         node_data = {
             'peers': map(int, peers),
-            'difficulty': args.difficulty
+            'difficulty': difficulty
         }
         node_type = node_types[node_id]
         if node_type == 'miner':
-            node_data['hashrate'] = (args.global_hashrate / miners_count) * 10 ** 9
+            node_data['mode'] = args.activity_generation_type
+            if node_data['mode'] == ActivityGenerationType.model.name:
+                node_data['hashrate'] = (args.global_hashrate / miners_count) * 10 ** 9
+            else:
+                node_data['trace'] = []
+                for index, block in enumerate(trace_data['blocks']):
+                    if index % miners_count == miner_id:
+                        node_data['trace'].append(block)
+                miner_id = miner_id + 1
         node.set('function', node_type)
         node_id_argument = et.Element('argument')
         node_id_argument.set('value', str(node_id))
@@ -76,8 +158,10 @@ def create():
     root = et.Element('platform')
     root.set('version', '4.1')
     create_directory()
-    create_ctg_data()
-    create_nodes(root)
+    trace_data = get_trace_data()
+    difficulty = args.difficulty if args.activity_generation_type == ActivityGenerationType.model.name else trace_data['difficulty']
+    create_ctg_data(trace_data)
+    create_nodes(root, trace_data, difficulty)
     tree = et.ElementTree(root)
     tree.docinfo.system_url = 'http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd'
     tree.write(args.data_dir + '/deployment.xml', xml_declaration = True, encoding = "utf-8")

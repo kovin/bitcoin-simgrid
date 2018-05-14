@@ -13,7 +13,7 @@ CTG::CTG()
   nodes_count = ctg_data["nodes_count"].get<int>();
   xbt_assert(nodes_count > 0, "The amount of nodes should be strictly positive");
   usingModelMode = ctg_data["mode"].get<std::string>() == "model";
-  txs_per_day = ctg_data["txs_per_day"].get<int>();
+  txs_per_day = ctg_data["distribution"]["txs_per_day"].get<int>();
   xbt_assert(txs_per_day >= 0, "Transaction per day can't be negative");
   if (ctg_data["distribution"]["type"].get<std::string>() == "exponential") {
     compute_exponential_distribution(ctg_data);
@@ -24,7 +24,7 @@ CTG::CTG()
 
 double CTG::get_next_activity_time(Node *node)
 {
-  // Between the moment we set the previous next_activity_time, we checked it and generated the
+  // Between the moment we set the previous next_activity_time and we checked it to then generate the
   // corresponding activity, we wasted some time that we need to substract from next_activity_time
   // if we expect to accomplish the number of txs_per_day
   double wasted_time = simgrid::s4u::Engine::getClock() - node->get_next_activity_time();
@@ -38,14 +38,12 @@ void CTG::compute_exponential_distribution(json ctg_data)
   std::default_random_engine generator;
   std::exponential_distribution<double> distribution(ctg_data["distribution"]["lambda"].get<double>());
   double p[nodes_count] = {};
-  XBT_DEBUG("por aca 1");
   for (int i = 0; i < nrolls; ++i) {
     double number = distribution(generator);
     if (number < 1.0) {
       ++p[int(nodes_count * number)];
     }
   }
-  XBT_DEBUG("por aca 2");
   for (int i = 0; i < nodes_count; ++i) {
     event_probability.push_back(p[i] / nrolls);
     XBT_DEBUG("event probability for node %d is %f", i, event_probability[i]);
