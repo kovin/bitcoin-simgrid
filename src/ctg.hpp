@@ -2,6 +2,8 @@
 #define CTG_HPP
 
 #include "node.hpp"
+#include "ctg_base_implementor.hpp"
+#include "ctg_model_implementor.hpp"
 
 using json = nlohmann::json;
 
@@ -11,15 +13,12 @@ public:
   static simgrid::xbt::Extension<simgrid::s4u::Actor, CTG> EXTENSION_ID;
 
   explicit CTG();
-  double get_next_activity_time(Node *node);
+  double get_next_activity_time(Node *node) {
+    return implementor->get_next_activity_time(node);
+  }
 
 private:
-    int nodes_count;
-    int txs_per_day;
-    bool usingModelMode;
-    std::vector<double> event_probability;
-    void compute_exponential_distribution(json ctg_data);
-    void compute_uniform_distribution(json ctg_data);
+    CTG_BaseImplementor* implementor;
 };
 
 #endif /* CTG_HPP */
