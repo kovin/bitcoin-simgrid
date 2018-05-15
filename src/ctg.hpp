@@ -3,7 +3,6 @@
 
 #include "node.hpp"
 #include "ctg_base_implementor.hpp"
-#include "ctg_model_implementor.hpp"
 
 using json = nlohmann::json;
 
@@ -13,6 +12,8 @@ public:
   static simgrid::xbt::Extension<simgrid::s4u::Actor, CTG> EXTENSION_ID;
 
   explicit CTG();
+  ~CTG();
+
   double get_next_activity_time(Node *node) {
     return implementor->get_next_activity_time(node);
   }

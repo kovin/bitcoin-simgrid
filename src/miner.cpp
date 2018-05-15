@@ -11,8 +11,14 @@ Miner::Miner(std::vector<std::string> args): Node::Node()
 void Miner::init_from_args(std::vector<std::string> args)
 {
   Node::init_from_args(args);
-  hashrate = node_data["hashrate"].get<long long>();
-  xbt_assert(hashrate >= 0, "Miner hashrate can't be negative, got %lld", hashrate);
+  std::string mode = node_data["mode"].get<std::string>();
+  using_trace = mode == "trace";
+  if (using_trace) {
+    trace = node_data["trace"].get<std::vector<TraceItem>>();
+  } else {
+    hashrate = node_data["hashrate"].get<long long>();
+    xbt_assert(hashrate >= 0, "Miner hashrate can't be negative, got %lld", hashrate);
+  }
   do_set_next_activity_time();
 }
 
@@ -24,10 +30,19 @@ double Miner::get_next_activity_time()
 // We set next time accoriding to the probability of this miner finding a block in the next 10 minutes
 void Miner::do_set_next_activity_time()
 {
-  int timespan = INTERVAL_BETWEEN_BLOCKS_IN_SECONDS; // 10 minutes
-  double event_probability = get_event_probability(timespan);
-  double wasted_time = simgrid::s4u::Engine::getClock() - next_activity_time;
-  next_activity_time = calc_next_activity_time(event_probability, timespan, 1) - wasted_time;
+  if (using_trace) {
+    if (current_trace_index < trace.size()) {
+      next_activity_time = trace[current_trace_index++].received;
+    } else {
+      // There are no more blocks to simulate => return SIMULATION_DURATION to avoid this miner from generating more blocks
+      next_activity_time = SIMULATION_DURATION;
+    }
+  } else {
+    int timespan = INTERVAL_BETWEEN_BLOCKS_IN_SECONDS; // 10 minutes
+    double event_probability = get_event_probability(timespan);
+    double wasted_time = simgrid::s4u::Engine::getClock() - next_activity_time;
+    next_activity_time = calc_next_activity_time(event_probability, timespan, 1) - wasted_time;
+  }
 }
 
 double Miner::get_event_probability(int timespan)

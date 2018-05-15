@@ -96,6 +96,7 @@ def get_trace_data():
         data['blocks'].append({
             'hash': block['hash'],
             'received': (block['received'] - earliest_tx).total_seconds(),
+            'confirmed': (block['received'] - earliest_tx).total_seconds(),
             'difficulty': block['difficulty']
         })
     data['blocks'] = sorted(data['blocks'], key = lambda block: block['received'])
