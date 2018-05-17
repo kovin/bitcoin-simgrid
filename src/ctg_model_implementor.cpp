@@ -21,7 +21,7 @@ double CTG_ModelImplementor::get_next_activity_time(Node *node)
   // Between the moment we set the previous next_activity_time and we checked it to then generate the
   // corresponding activity, we wasted some time that we need to substract from next_activity_time
   // if we expect to accomplish the number of txs_per_day
-  double wasted_time = simgrid::s4u::Engine::getClock() - node->get_next_activity_time();
+  double wasted_time = simgrid::s4u::Engine::get_clock() - node->get_next_activity_time();
   return calc_next_activity_time(event_probability[node->get_id()], 24 * 60 * 60, txs_per_day) - wasted_time;
 }
 

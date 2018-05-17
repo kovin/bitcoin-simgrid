@@ -93,7 +93,7 @@ void Node::send_unconfirmed_transactions()
 
 void Node::generate_activity()
 {
-  if (next_activity_time > simgrid::s4u::Engine::getClock()) {
+  if (next_activity_time > simgrid::s4u::Engine::get_clock()) {
     return;
   }
   do_set_next_activity_time();
@@ -344,13 +344,13 @@ long Node::compute_mempool_size()
 simgrid::s4u::MailboxPtr Node::get_peer_incoming_mailbox(int peer_id)
 {
   std::string mboxName = std::string("from:") + std::to_string(peer_id) + "-to:" + std::to_string(my_id);
-  return simgrid::s4u::Mailbox::byName(mboxName);
+  return simgrid::s4u::Mailbox::by_name(mboxName);
 }
 
 simgrid::s4u::MailboxPtr Node::get_peer_outgoing_mailbox(int peer_id)
 {
   std::string mboxName = std::string("from:") + std::to_string(my_id) + "-to:" + std::to_string(peer_id);
-  return simgrid::s4u::Mailbox::byName(mboxName);
+  return simgrid::s4u::Mailbox::by_name(mboxName);
 }
 
 int Node::on_exit(void*, void*)

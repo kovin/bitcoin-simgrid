@@ -40,7 +40,7 @@ void Miner::do_set_next_activity_time()
   } else {
     int timespan = INTERVAL_BETWEEN_BLOCKS_IN_SECONDS; // 10 minutes
     double event_probability = get_event_probability(timespan);
-    double wasted_time = simgrid::s4u::Engine::getClock() - next_activity_time;
+    double wasted_time = simgrid::s4u::Engine::get_clock() - next_activity_time;
     next_activity_time = calc_next_activity_time(event_probability, timespan, 1) - wasted_time;
   }
 }
@@ -54,13 +54,13 @@ double Miner::get_event_probability(int timespan)
 void Miner::generate_activity()
 {
   Node::generate_activity();
-  if (next_activity_time > simgrid::s4u::Engine::getClock()) {
+  if (next_activity_time > simgrid::s4u::Engine::get_clock()) {
     return;
   }
   do_set_next_activity_time();
   Transaction tx = create_transaction();
   mempool.insert(std::make_pair(tx.id, tx));
-  Block *block = new Block(my_id, blockchain_height + 1, simgrid::s4u::Engine::getClock(), blockchain_tip, difficulty, mempool);
+  Block *block = new Block(my_id, blockchain_height + 1, simgrid::s4u::Engine::get_clock(), blockchain_tip, difficulty, mempool);
   handle_new_block(my_id, block);
   delete block;
 }

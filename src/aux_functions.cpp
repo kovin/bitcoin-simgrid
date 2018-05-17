@@ -34,7 +34,7 @@ double frand(double limit)
 double calc_next_activity_time(double probability, int timespan, int events_per_timespan)
 {
   if (events_per_timespan > 0) {
-    return simgrid::s4u::Engine::getClock() + (-log(1 - frand()) / probability) * timespan / events_per_timespan;
+    return simgrid::s4u::Engine::get_clock() + (-log(1 - frand()) / probability) * timespan / events_per_timespan;
   } else {
     return SIMULATION_DURATION;
   }

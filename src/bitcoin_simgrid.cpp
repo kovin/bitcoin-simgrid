@@ -37,14 +37,14 @@ int main(int argc, char *argv[])
   parse_and_validate_args(argc, argv);
   srand(1);// Use a constant seed to have deterministic runs on our simulations
   CTG::EXTENSION_ID = simgrid::s4u::Actor::extension_create<CTG>();
-  e.registerFunction<Node>("node");
-  e.registerFunction<Miner>("miner");
-  e.loadPlatform(argv[1]);
+  e.register_actor<Node>("node");
+  e.register_actor<Miner>("miner");
+  e.load_platform(argv[1]);
   deployment_directory = std::string(argv[2]);
   // This will be the single instance in charge of centralizing the generation of transactions
   ctg = new CTG();
   std::string deployment_file = deployment_directory + std::string("/deployment.xml");
-  e.loadDeployment(deployment_file.c_str());
+  e.load_deployment(deployment_file.c_str());
   e.run();
   return 0;
 }
