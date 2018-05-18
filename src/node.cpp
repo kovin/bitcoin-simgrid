@@ -4,8 +4,6 @@
 
 using json = nlohmann::json;
 
-simgrid::xbt::Extension<simgrid::s4u::Actor, CTG> CTG::EXTENSION_ID;
-
 XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
 
 Node::Node(std::vector<std::string> args)
@@ -17,7 +15,6 @@ Node::Node(std::vector<std::string> args)
 void Node::init_from_args(std::vector<std::string> args)
 {
   BaseNode::init_from_args(args);
-  simgrid::s4u::Actor::by_pid(simgrid::s4u::this_actor::get_pid())->extension_set(ctg);
   difficulty = node_data["difficulty"].get<long long>();
   xbt_assert(difficulty > 0, "Network difficulty must be greater than 0, got %lld", difficulty);
   do_set_next_activity_time();
@@ -29,7 +26,7 @@ std::string Node::get_node_data_filename(int id) {
 
 void Node::do_set_next_activity_time()
 {
-  next_activity_time = simgrid::s4u::Actor::by_pid(simgrid::s4u::this_actor::get_pid())->extension<CTG>()->get_next_activity_time(this);
+  next_activity_time = ctg->get_next_activity_time(this);
 }
 
 double Node::get_next_activity_time()
@@ -56,7 +53,7 @@ void Node::send_blocks()
     std::map<long, Block> blocks_to_send = DiffMaps(blocks_to_broadcast, blocks_known_by_peer[peer_id]);
     typename std::map<long, Block>::const_iterator it_block = blocks_to_send.begin();
     while(it_block != blocks_to_send.end()) {
-      XBT_DEBUG("sending block to %d", peer_id);
+      XBT_INFO("sending block to %d", peer_id);
       simgrid::s4u::MailboxPtr mbox = get_peer_outgoing_mailbox(peer_id);
       mbox->put_async(new Block(it_block->second), msg_size + it_block->second.size);
       ++it_block;
@@ -81,7 +78,7 @@ void Node::send_unconfirmed_transactions()
     std::map<long, Transaction> txs_to_send = DiffMaps(txs_to_broadcast, txs_known_by_peer[peer_id]);
     if (txs_to_send.size() > 0) {
       Message *message = new UnconfirmedTransactions(my_id, txs_to_send);
-      XBT_DEBUG("sending %ld unconfirmed transactions to %d", txs_to_send.size(), peer_id);
+      XBT_INFO("sending %ld unconfirmed transactions to %d", txs_to_send.size(), peer_id);
       simgrid::s4u::MailboxPtr mbox = get_peer_outgoing_mailbox(peer_id);
       mbox->put_async(message, msg_size + message->size);
     }
@@ -107,7 +104,7 @@ void Node::generate_activity()
 
 Transaction Node::create_transaction()
 {
-  XBT_DEBUG("creating tx");
+  XBT_INFO("creating tx");
   long numberOfBytes = rand() & AVERAGE_BYTES_PER_TX;
   // FIXME: agregar datos del utxo que estamos gastando con esta transaccion.
   // el nodo deberia tener en su blockchain_data.json los datos de sus propios utxos
@@ -147,7 +144,7 @@ void Node::handle_new_block(int relayed_by_peer_id, Block *message)
       // Now that we know of txs that got confirmed we need to evict them from our mempool
       mempool = DiffMaps(mempool, block.transactions);
       long known_txs_that_got_confirmed = previous_mempool_size - mempool.size();
-      XBT_DEBUG(
+      XBT_INFO(
         "received block %ld from %d with %ld transactions (%ld of them new). mempool size: %ld",
         block.id,
         relayed_by_peer_id,
@@ -168,7 +165,7 @@ void Node::handle_new_block(int relayed_by_peer_id, Block *message)
         txs_known_by_peer[peer_id] = DiffMaps(txs_known_by_peer[peer_id], block.transactions);
       }
     } else {
-      XBT_DEBUG(
+      XBT_INFO(
         "received a new block %ld from %d with %ld txs which doesn't represent a new best chain",
         block.id,
         relayed_by_peer_id,
@@ -178,7 +175,7 @@ void Node::handle_new_block(int relayed_by_peer_id, Block *message)
   } else {
     // When a block arrives we only need to do something only if we didn't
     // know about it before.
-    XBT_DEBUG(
+    XBT_INFO(
       "received a known block %ld from %d with %ld transactions",
       block.id,
       relayed_by_peer_id,
@@ -195,7 +192,7 @@ void Node::handle_orphan_blocks(Block block)
     std::vector<Block> orphans = orphan_blocks[block.id];
     orphan_blocks[block.id].clear();
     for(std::vector<Block>::iterator it_orphan = orphans.begin(); it_orphan != orphans.end(); it_orphan++) {
-      XBT_DEBUG(
+      XBT_INFO(
         "found parent %ld for %ld",
         block.id,
         it_orphan->id
@@ -211,7 +208,7 @@ bool Node::blockchain_tip_updated(Block block)
   std::map<long, KnownBlock>::iterator it = known_blocks_by_id.find(block.parent_id);
   if (it == known_blocks_by_id.end()) {
     orphan_blocks[block.parent_id].push_back(block);
-    XBT_DEBUG("received orphan block %ld", block.id);
+    XBT_INFO("received orphan block %ld", block.id);
     return false;
   }
   long long agregated_difficulty = block.difficulty + it->second.agregated_difficulty;
@@ -221,7 +218,7 @@ bool Node::blockchain_tip_updated(Block block)
   // Check if we found a new best chain
   if (agregated_difficulty > current_agregated_difficulty) {
     if (block.parent_id != blockchain_tip) {
-      XBT_DEBUG("reorg_txs");
+      XBT_INFO("reorg_txs");
       reorg_txs(block.id, blockchain_tip);
     }
     blockchain_tip = block.id;
@@ -232,7 +229,7 @@ bool Node::blockchain_tip_updated(Block block)
       double base_time = known_blocks.find(blockchain_height - INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS)->second.time;
       double actual_time = block.time - base_time;
       long long new_difficulty = block.network_difficulty * expected_time / actual_time;
-      XBT_DEBUG(
+      XBT_INFO(
         "blockchain_height %d previous difficulty %lld, new difficulty %lld block date %lf expected time %lf actual time %lf",
         blockchain_height,
         difficulty,
@@ -255,7 +252,7 @@ bool Node::blockchain_tip_updated(Block block)
 void Node::reorg_txs(long new_tip_id, long old_tip_id)
 {
   long common_parent_id = find_common_parent_id(new_tip_id, old_tip_id);
-  XBT_DEBUG(
+  XBT_INFO(
     "common_parent_id is %ld",
     common_parent_id
   );
@@ -275,7 +272,7 @@ void Node::reorg_txs(long new_tip_id, long old_tip_id)
     current_block_id = known_block.parent_id;
   }
   known_txs_ids = JoinSets(known_txs_ids, known_txs_to_add);
-  XBT_DEBUG(
+  XBT_INFO(
     "reorganizing blocks. knwon txs discarded %ld. known txs added %ld",
     DiffSets(known_txs_to_discard, known_txs_to_add).size(),
     DiffSets(known_txs_to_add, known_txs_to_discard).size()
@@ -312,7 +309,7 @@ void Node::handle_unconfirmed_transactions(int relayed_by_peer_id, UnconfirmedTr
 {
   std::map<long, Transaction> txs_we_didnt_know = DiffMaps(message->unconfirmed_transactions, known_txs_ids);
   known_txs_ids = JoinMaps(known_txs_ids, message->unconfirmed_transactions);
-  XBT_DEBUG(
+  XBT_INFO(
     "received %ld unconfirmed transactions (%ld of them new) from %d",
     message->unconfirmed_transactions.size(),
     txs_we_didnt_know.size(),
@@ -356,6 +353,6 @@ simgrid::s4u::MailboxPtr Node::get_peer_outgoing_mailbox(int peer_id)
 int Node::on_exit(void*, void*)
 {
   XBT_LOG_EXTERNAL_DEFAULT_CATEGORY(bitcoin_simgrid);
-  XBT_DEBUG("shut down");
+  XBT_INFO("shut down");
   return 0;
 }

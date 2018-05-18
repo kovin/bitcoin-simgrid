@@ -15,11 +15,12 @@ CTG* ctg;
 unsigned int SIMULATION_DURATION = 3600;
 
 void parse_and_validate_args(int argc, char *argv[]) {
-  xbt_assert(argc <= 6, "Usage: %s platform_file deployment_directory [-debug] [--simulation-duration <seconds>]", argv[0]);
+  xbt_assert(argc <= 6, "Usage: %s platform_file deployment_directory [-info] [--simulation-duration <seconds>]", argv[0]);
   if (argc > 3) {
+    xbt_log_control_set("bitcoin_simgrid.thres:critical");
     for (int i = 3; i < argc; ++i) {
-      if (std::string(argv[i]) == "-debug") {
-        xbt_log_control_set("bitcoin_simgrid.fmt:%10h:%e%m%n bitcoin_simgrid.thres:debug");
+      if (std::string(argv[i]) == "-info") {
+        xbt_log_control_set("bitcoin_simgrid.fmt:%10h:%e%m%n bitcoin_simgrid.thres:info");
       } else if (std::string(argv[i]) == "--simulation-duration") {
         xbt_assert(argc > i, "Missing argument for --simulation-duration");
         ++i;
@@ -36,7 +37,6 @@ int main(int argc, char *argv[])
   simgrid::s4u::Engine e(&argc, argv);
   parse_and_validate_args(argc, argv);
   srand(1);// Use a constant seed to have deterministic runs on our simulations
-  CTG::EXTENSION_ID = simgrid::s4u::Actor::extension_create<CTG>();
   e.register_actor<Node>("node");
   e.register_actor<Miner>("miner");
   e.load_platform(argv[1]);

@@ -33,14 +33,14 @@ bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/defa
 bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --simulation-duration 7200
 
 ```
-### With debug information
+### Output extra information
 ```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ -debug
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ -info
 
 ```
 ### With custom log
 ```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --log="bitcoin_simgrid.fmt:%d%10h:%e%m%n bitcoin_simgrid.thres:debug"
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --log="bitcoin_simgrid.fmt:%d%10h:%e%m%n bitcoin_simgrid.thres:info"
 
 ```
 

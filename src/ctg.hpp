@@ -9,8 +9,6 @@ using json = nlohmann::json;
 class CTG
 {
 public:
-  static simgrid::xbt::Extension<simgrid::s4u::Actor, CTG> EXTENSION_ID;
-
   explicit CTG();
   ~CTG();
 

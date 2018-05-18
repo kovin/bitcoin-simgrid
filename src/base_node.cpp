@@ -23,7 +23,7 @@ void BaseNode::operator()()
     double sleep_duration = std::min(SLEEP_DURATION, get_next_activity_time() - simgrid::s4u::Engine::get_clock());
     simgrid::s4u::this_actor::sleep_for(sleep_duration);
   }
-  XBT_DEBUG("shutting down");
+  XBT_INFO("shutting down");
   simgrid::s4u::Actor::kill_all();
 }
 

@@ -27,7 +27,7 @@ double CTG_ModelImplementor::get_next_activity_time(Node *node)
 
 void CTG_ModelImplementor::compute_exponential_distribution(json ctg_data)
 {
-  XBT_DEBUG("event probability is exponential with lambda %f", ctg_data["distribution"]["lambda"].get<double>());
+  XBT_INFO("event probability is exponential with lambda %f", ctg_data["distribution"]["lambda"].get<double>());
   const int nrolls = 1000 * nodes_count; // number of experiments
   std::default_random_engine generator;
   std::exponential_distribution<double> distribution(ctg_data["distribution"]["lambda"].get<double>());
@@ -40,7 +40,7 @@ void CTG_ModelImplementor::compute_exponential_distribution(json ctg_data)
   }
   for (int i = 0; i < nodes_count; ++i) {
     event_probability.push_back(p[i] / nrolls);
-    XBT_DEBUG("event probability for node %d is %f", i, event_probability[i]);
+    XBT_INFO("event probability for node %d is %f", i, event_probability[i]);
   }
 }
 
@@ -49,5 +49,5 @@ void CTG_ModelImplementor::compute_uniform_distribution(json ctg_data)
   for (int i = 0; i < nodes_count; i++) {
     event_probability.push_back(1.0 / nodes_count);
   }
-  XBT_DEBUG("event probability is uniform and is %f for every node", 1.0 / nodes_count);
+  XBT_INFO("event probability is uniform and is %f for every node", 1.0 / nodes_count);
 }
