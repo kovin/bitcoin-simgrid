@@ -25,17 +25,12 @@ bitcoin-simgrid$ make
 ## Run
 ### Simple
 ```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --log="root.thres:critical"
 
 ```
 ### Setting the simulation duration time (in seconds)
 ```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --simulation-duration 7200
-
-```
-### Output extra information
-```bash
-bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ -info
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --simulation-duration 7200 --log="root.thres:critical"
 
 ```
 ### With custom log
@@ -43,6 +38,12 @@ bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/defa
 bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/default_deployment/ --log="bitcoin_simgrid.fmt:%d%10h:%e%m%n bitcoin_simgrid.thres:info"
 
 ```
+### To reproduce a real blockchain trace
+```bash
+bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/trace_deployment/ --log="bitcoin_simgrid.fmt:%d%10h:%e%m%n bitcoin_simgrid.thres:info"
+
+```
+
 
 ## Topology generation
 ### With Full routing

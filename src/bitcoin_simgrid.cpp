@@ -17,11 +17,8 @@ unsigned int SIMULATION_DURATION = 3600;
 void parse_and_validate_args(int argc, char *argv[]) {
   xbt_assert(argc <= 6, "Usage: %s platform_file deployment_directory [-info] [--simulation-duration <seconds>]", argv[0]);
   if (argc > 3) {
-    xbt_log_control_set("bitcoin_simgrid.thres:critical");
     for (int i = 3; i < argc; ++i) {
-      if (std::string(argv[i]) == "-info") {
-        xbt_log_control_set("bitcoin_simgrid.fmt:%10h:%e%m%n bitcoin_simgrid.thres:info");
-      } else if (std::string(argv[i]) == "--simulation-duration") {
+      if (std::string(argv[i]) == "--simulation-duration") {
         xbt_assert(argc > i, "Missing argument for --simulation-duration");
         ++i;
         SIMULATION_DURATION = std::stoi(argv[i]);
