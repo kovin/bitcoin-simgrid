@@ -116,8 +116,8 @@ void Node::process_messages()
   for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
     int peer_id = *it_id;
     simgrid::s4u::MailboxPtr mbox = get_peer_incoming_mailbox(peer_id);
-    while (!mbox->empty()) {
-      void* data = mbox->get();
+    if (!mbox->empty()) {
+      void* data = mbox->get();// Fixme: estoy perdiendo tiempo aca, deberia ver si puedo hacer andar get_async
       Message *payload = static_cast<Message*>(data);
       switch (payload->get_type()) {
         case MESSAGE_BLOCK:
@@ -317,14 +317,14 @@ void Node::handle_unconfirmed_transactions(int relayed_by_peer_id, UnconfirmedTr
   );
   // The unconfirmed transactions to broadcast will be the ones I didn't know of before
   txs_to_broadcast = JoinMaps(txs_to_broadcast, txs_we_didnt_know);
-  // The unconfirmed transaction I'm aware of now include the ones I just received
+  // The unconfirmed transactions I'm aware of now include the ones I just received
   mempool = JoinMaps(mempool, message->unconfirmed_transactions);
   if (relayed_by_peer_id != my_id) {
     // Now I need to update the txs that I know my peer knows about
     txs_known_by_peer[relayed_by_peer_id] = JoinMaps(txs_known_by_peer[message->peer_id], message->unconfirmed_transactions);
   }
   // Fix: find a more suitable way to calculate execution duration for unconfirmed txs
-  simgrid::s4u::this_actor::execute(1e8 * message->unconfirmed_transactions.size());// work for .1 seconds for each transaction
+  simgrid::s4u::this_actor::execute(1e8 * txs_we_didnt_know.size());// work for .1 seconds for each transaction
 }
 
 long Node::compute_mempool_size()
