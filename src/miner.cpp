@@ -14,7 +14,7 @@ void Miner::init_from_args(std::vector<std::string> args)
   std::string mode = node_data["mode"].get<std::string>();
   using_trace = mode == "trace";
   if (using_trace) {
-    trace = node_data["trace"].get<std::vector<TraceItem>>();
+    trace = node_data["trace"].get<std::vector<TraceItemMiner>>();
   } else {
     hashrate = node_data["hashrate"].get<long long>();
     xbt_assert(hashrate >= 0, "Miner hashrate can't be negative, got %lld", hashrate);
@@ -32,7 +32,10 @@ void Miner::do_set_next_activity_time()
 {
   if (using_trace) {
     if (current_trace_index < trace.size()) {
-      next_activity_time = trace[current_trace_index++].received;
+      next_activity_time = trace[current_trace_index++].received + 5;
+      std::cout << "espero generar " << trace[current_trace_index - 1].n_tx << " txs" << std::endl;
+      std::cout << "espero incluir al menos " << trace[current_trace_index - 1].n_tx_only_in_block << " txs" << std::endl;
+      std::cout << next_activity_time << std::endl;
     } else {
       // There are no more blocks to simulate => return SIMULATION_DURATION to avoid this miner from generating more blocks
       next_activity_time = SIMULATION_DURATION;
@@ -57,9 +60,23 @@ void Miner::generate_activity()
   if (next_activity_time > simgrid::s4u::Engine::get_clock()) {
     return;
   }
+  std::cout << "next activity time" << next_activity_time << std::endl;
   do_set_next_activity_time();
-  Transaction tx = create_transaction();
-  mempool.insert(std::make_pair(tx.id, tx));
+  if (using_trace) {
+    // I need to add to the block the coinbase tx and all the txs that only appeared
+    // in the network when this block was broadcasted
+    TraceItemMiner traceItem = trace[current_trace_index - 1];
+    for (int i = 0; i < traceItem.n_tx_only_in_block; i++) {
+      Transaction tx = create_transaction();
+      mempool.insert(std::make_pair(tx.id, tx));
+    }
+    XBT_INFO("creating a block with %ld txs and we expected %d", mempool.size(), traceItem.n_tx);
+  } else {
+    // I need to include the coinbase tx
+    Transaction tx = create_transaction();
+    mempool.insert(std::make_pair(tx.id, tx));
+    XBT_INFO("creating a block with %ld txs", mempool.size());
+  }
   Block *block = new Block(my_id, blockchain_height + 1, simgrid::s4u::Engine::get_clock(), blockchain_tip, difficulty, mempool);
   handle_new_block(my_id, block);
   delete block;

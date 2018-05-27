@@ -2,7 +2,7 @@
 #define MINER_HPP
 
 #include "node.hpp"
-#include "trace_item.hpp"
+#include "trace_item_miner.hpp"
 
 class Miner : public Node {
 public:
@@ -16,7 +16,7 @@ protected:
 private:
   bool using_trace;
   int current_trace_index = 0;
-  std::vector<TraceItem> trace;
+  std::vector<TraceItemMiner> trace;
   long long hashrate;
   double next_activity_time;
 

@@ -64,26 +64,14 @@ def get_trace_data():
     for block in blocks_to_parse:
         block_file_path = '%s/%s' % (blocks_dir, block)
         block_data = json.load(open(block_file_path))
+        earliest_tx, txs_broadcasted_in_block = add_txs_to_raw_data(block_data, raw_data, earliest_tx)
         raw_data['blocks'].append({
             'hash': block_data['hash'],
             'received': parse_date(block_data['received_time']),
-            'difficulty': nbits_to_difficulty(block_data['bits'])
+            'difficulty': nbits_to_difficulty(block_data['bits']),
+            'n_tx_only_in_block': txs_broadcasted_in_block,
+            'n_tx': block_data['n_tx']
         })
-        txids = block_data['txids']
-        for txid in txids:
-            tx_file_path = '%s/txs/%s' % (args.trace_dir, txid)
-            tx_data = json.load(open(tx_file_path))
-            if tx_data['block_index'] == 0:
-                continue
-            received = parse_date(tx_data['received'])
-            confirmed = parse_date(tx_data['confirmed'])
-            if earliest_tx is None or received < earliest_tx:
-                earliest_tx = received
-            raw_data['txs'].append({
-                'hash': txid,
-                'received': received,
-                'confirmed': confirmed
-            })
     data = {'txs': [], 'blocks': []}
     for tx in raw_data['txs']:
         data['txs'].append({
@@ -97,11 +85,33 @@ def get_trace_data():
             'hash': block['hash'],
             'received': (block['received'] - earliest_tx).total_seconds(),
             'confirmed': (block['received'] - earliest_tx).total_seconds(),
-            'difficulty': block['difficulty']
+            'difficulty': block['difficulty'],
+            'n_tx_only_in_block': block['n_tx_only_in_block'],
+            'n_tx': block['n_tx']
         })
     data['blocks'] = sorted(data['blocks'], key = lambda block: block['received'])
     data['difficulty'] = data['blocks'][0]['difficulty'] if len(data['blocks']) > 0 else 0
     return data
+
+def add_txs_to_raw_data(block_data, raw_data, earliest_tx):
+    txs_broadcasted_in_block = 0
+    block_received_date = parse_date(block_data['received_time'])
+    for txid in block_data['txids']:
+        tx_file_path = '%s/txs/%s' % (args.trace_dir, txid)
+        tx_data = json.load(open(tx_file_path))
+        received = parse_date(tx_data['received'])
+        confirmed = parse_date(tx_data['confirmed'])
+        if earliest_tx is None or received < earliest_tx:
+            earliest_tx = received
+        if received == block_received_date:
+            txs_broadcasted_in_block = txs_broadcasted_in_block + 1
+        else:
+            raw_data['txs'].append({
+                'hash': txid,
+                'received': received,
+                'confirmed': confirmed
+            })
+    return earliest_tx, txs_broadcasted_in_block
 
 def nbits_to_difficulty(nbits):
     nbits = hexconv.from_decimal(nbits)
