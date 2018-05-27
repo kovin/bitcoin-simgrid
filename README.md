@@ -61,10 +61,10 @@ bitcoin-simgrid$ utils/createPlatformXml --file=platform/300_nodes_dijkstracache
 
 ## Deployment generation
 ```bash
-bitcoin-simgrid$ utils/createDeploymentXml --nodes_count=300 --peers_count=8 --data_dir=platform/300_nodes_deployment --miners_ratio=10 --txs_per_day=200000 --difficulty=3462542391191 --global_hashrate=25130091717 --distribution_type=exponential --distribution_lambda=2.5
+bitcoin-simgrid$ utils/createDeploymentXml --nodes_count=300 --peers_count=8 --data_dir=platform/300_nodes_deployment --miners_ratio=10 --txs_per_day=200000 --difficulty=3462542391191 --global_hashrate=25130091717 --distribution_type=exponential --distribution_lambda=2.5 --seed=1
 ```
 
 ## Deployment generation with trace
 ```bash
-bitcoin-simgrid$ utils/createDeploymentXml --nodes_count=300 --peers_count=8 --data_dir=platform/trace_deployment --difficulty=3462542391191 --distribution_type=exponential --distribution_lambda=2.5 --trace_dir=../blockchain --activity_generation_type=trace
+bitcoin-simgrid$ utils/createDeploymentXml --nodes_count=300 --peers_count=8 --data_dir=platform/trace_deployment --difficulty=3462542391191 --distribution_type=exponential --distribution_lambda=2.5 --trace_dir=../blockchain --activity_generation_type=trace --seed=1
 ```
