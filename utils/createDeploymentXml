@@ -131,8 +131,9 @@ def create_nodes(root, trace_data, difficulty):
     node_types = ['miner' if random.random() * 100 < args.miners_ratio else 'node' for x in range(0, args.nodes_count)]
     miners_count = sum([1 if node_type == 'miner' else 0 for node_type in node_types])
     miner_id = 0
-    G = nx.connected_watts_strogatz_graph(args.nodes_count, args.peers_count, .2, tries=100, seed=args.seed)
+    #G = nx.connected_watts_strogatz_graph(args.nodes_count, args.peers_count, .2, tries=100, seed=args.seed)
     #G = nx.barabasi_albert_graph(args.nodes_count, args.peers_count, seed=args.seed)
+    G = nx.powerlaw_cluster_graph(args.nodes_count, args.peers_count, .6, seed=args.seed)
     for node_id in G.nodes():
         node = et.Element('actor')
         node.set('host', 'node-' + str(node_id))

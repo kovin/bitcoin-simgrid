@@ -40,11 +40,14 @@ def add_route_between_hosts(G, zone, origin, destiny):
         route.append(link_ctn)
 
 def add_zone_nodes(zone):
-    G = nx.barabasi_albert_graph(args.hosts_count, args.edges, args.seed)
+    #G = nx.barabasi_albert_graph(args.hosts_count, args.edges, args.seed)
+    #G = nx.connected_watts_strogatz_graph(args.hosts_count, args.edges, .2, tries=100, seed=args.seed)
+    G = nx.powerlaw_cluster_graph(args.hosts_count, args.edges, .6, seed=args.seed)
     for n in G.nodes():
         host = et.Element('host')
         host.set('id', 'node-%s' % n)
-        host.set('speed', '1Gf')
+        # Set computational power proportionally to the accepted edges that we will have
+        host.set('speed', '%sGf' % (1.0 * len(G.edges(n)) / args.edges))
         zone.append(host)
         edge_number = 0
     for e in G.edges():
