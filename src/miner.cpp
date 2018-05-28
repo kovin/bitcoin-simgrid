@@ -32,7 +32,7 @@ void Miner::do_set_next_activity_time()
 {
   if (using_trace) {
     if (current_trace_index < trace.size()) {
-      next_activity_time = trace[current_trace_index++].received + 5;
+      next_activity_time = trace[current_trace_index++].received;
       std::cout << "espero generar " << trace[current_trace_index - 1].n_tx << " txs" << std::endl;
       std::cout << "espero incluir al menos " << trace[current_trace_index - 1].n_tx_only_in_block << " txs" << std::endl;
       std::cout << next_activity_time << std::endl;
