@@ -7,7 +7,7 @@
 class Node : public BaseNode
 {
 public:
-  double msg_size = 1000000;
+  double msg_size = 10000;
 
   explicit Node() {};
   explicit Node(std::vector<std::string> args);
