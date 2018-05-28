@@ -113,11 +113,30 @@ Transaction Node::create_transaction()
 
 void Node::process_messages()
 {
+  std::vector<simgrid::s4u::CommPtr> pending_recvs;
+  simgrid::s4u::CommPtr comm;
+  std::vector<int> corresponding_peer_id;
+  int messages_to_receive = 0;
+  int received_messages = 0;
+  void* data;
   for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
     int peer_id = *it_id;
     simgrid::s4u::MailboxPtr mbox = get_peer_incoming_mailbox(peer_id);
     if (!mbox->empty()) {
-      void* data = mbox->get();// Fixme: estoy perdiendo tiempo aca, deberia ver si puedo hacer andar get_async
+      messages_to_receive++;
+      comm = mbox->get_async(&data);
+      pending_recvs.push_back(comm);
+      corresponding_peer_id.push_back(peer_id);
+    }
+  }
+  while (received_messages < messages_to_receive) {
+    int idx = simgrid::s4u::Comm::wait_any(&pending_recvs);
+    if (idx != -1) {
+      received_messages++;
+      comm = pending_recvs.at(idx);
+      int peer_id = corresponding_peer_id.at(idx);
+      pending_recvs.erase(pending_recvs.begin() + idx);
+      corresponding_peer_id.erase(corresponding_peer_id.begin() + idx);
       Message *payload = static_cast<Message*>(data);
       switch (payload->get_type()) {
         case MESSAGE_BLOCK:
