@@ -245,7 +245,8 @@ bool Node::blockchain_tip_updated(Block block)
     known_blocks.insert(std::make_pair(block.height, new_known_block));
     if ((blockchain_height % INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS) == 0) {
       double expected_time = INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS * INTERVAL_BETWEEN_BLOCKS_IN_SECONDS;
-      double base_time = known_blocks.find(blockchain_height - INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS)->second.time;
+      // We add "- 1" to simulate the off-by-one bug error in the reference client implementation
+      double base_time = known_blocks.find(blockchain_height - (INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS - 1))->second.time;
       double actual_time = block.time - base_time;
       long long new_difficulty = block.network_difficulty * expected_time / actual_time;
       XBT_INFO(
