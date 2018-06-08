@@ -42,7 +42,7 @@ double Node::get_next_activity_time()
 void Node::send_messages()
 {
   send_blocks();
-  send_unconfirmed_transactions();
+  send_transactions();
 }
 
 void Node::send_blocks()
@@ -70,7 +70,7 @@ void Node::send_blocks()
   blocks_to_broadcast.clear();
 }
 
-void Node::send_unconfirmed_transactions()
+void Node::send_transactions()
 {
   // We will let each peer know about recent unconfirmed txs (but we won't send the txs that we know the peer already knows)
   for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
@@ -98,7 +98,7 @@ void Node::generate_activity()
   Transaction tx = create_transaction();
   txs.insert(std::make_pair(tx.id, tx));
   UnconfirmedTransactions *my_unconfirmed_txs = new UnconfirmedTransactions(my_id, txs);
-  handle_unconfirmed_transactions(my_id, my_unconfirmed_txs);
+  handle_transactions(my_id, my_unconfirmed_txs);
   delete my_unconfirmed_txs;
 }
 
@@ -324,7 +324,7 @@ double Node::get_time_to_process_block(Block block)
   return pre_processed_time * scale_factor;
 }
 
-void Node::handle_unconfirmed_transactions(int relayed_by_peer_id, UnconfirmedTransactions *message)
+void Node::handle_transactions(int relayed_by_peer_id, UnconfirmedTransactions *message)
 {
   std::map<long, Transaction> txs_we_didnt_know = DiffMaps(message->unconfirmed_transactions, known_txs_ids);
   known_txs_ids = JoinMaps(known_txs_ids, message->unconfirmed_transactions);

@@ -41,10 +41,10 @@ private:
 
   void do_set_next_activity_time();
   void process_messages();
-  void handle_unconfirmed_transactions(int relayed_by_peer_id, UnconfirmedTransactions *message);
+  void handle_transactions(int relayed_by_peer_id, UnconfirmedTransactions *message);
   double get_time_to_process_block(Block block);
   void send_blocks();
-  void send_unconfirmed_transactions();
+  void send_transactions();
   void handle_orphan_blocks(Block block);
   bool blockchain_tip_updated(Block block);
   void reorg_txs(long new_tip_id, long old_tip_id);
