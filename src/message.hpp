@@ -41,8 +41,8 @@ public:
 class Transaction : public Message
 {
   public:
-    std::map<long, std::set<long>> inputs;// Map of referenced unspent outpoints to be used as inputs of this tx
-    std::vector<long> outputs;// list of outputs created by this tx
+    Transaction () : Message(-1) {}
+
     Transaction (int peer_id, long size) : Message(peer_id, size) { };
 
     e_message_type get_type()
@@ -61,18 +61,19 @@ class Block : public Message
     int height;
     long parent_id;
     std::map<long, Transaction> transactions;
-    long long difficulty;
     long long network_difficulty;
     double time;
+    Block () : Message(-1) {}
+
     Block (int peer_id, int height, double time, long parent_id, long long network_difficulty, std::map<long, Transaction> transactions)
     : Message(peer_id), height(height), time(time), parent_id(parent_id), network_difficulty(network_difficulty), transactions(transactions)
     {
-        size += 1000000;
+        // size += 1000000; // Revisar
         for (auto const& idAndTransaction : transactions)
         {
           size += idAndTransaction.second.size;
         }
-        difficulty = llrand(network_difficulty);
+        //difficulty = llrand(network_difficulty);
     };
 
     e_message_type get_type()
