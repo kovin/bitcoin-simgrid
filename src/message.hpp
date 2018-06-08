@@ -8,8 +8,16 @@ typedef enum
 {
   MESSAGE_BLOCK,
   MESSAGE_TRANSACTION,
-  UNCONFIRMED_TRANSACTIONS
+  UNCONFIRMED_TRANSACTIONS,
+  MESSAGE_INV,
+  MESSAGE_GETDATA,
 } e_message_type;
+
+typedef enum
+{
+  INV_TX,
+  INV_BLOCK
+} e_inv_type;
 
 class Message
 {
@@ -90,6 +98,40 @@ class UnconfirmedTransactions : public Message
 
     std::string get_type_name() {
       return "unconfirmed_transactions";
+    }
+};
+
+class Inv : public Message
+{
+  public:
+    std::map<long, e_inv_type> objects;
+    Inv(int peer_id, std::map<long, e_inv_type> objects) : Message(peer_id), objects(objects) { };
+
+    e_message_type get_type()
+    {
+      return MESSAGE_INV;
+    }
+
+    std::string get_type_name()
+    {
+      return "inv";
+    }
+};
+
+class GetData : public Message
+{
+  public:
+    std::map<long, e_inv_type> objects;
+    GetData(int peer_id, std::map<long, e_inv_type> objects) : Message(peer_id), objects(objects) { };
+
+    e_message_type get_type()
+    {
+      return MESSAGE_GETDATA;
+    }
+
+    std::string get_type_name()
+    {
+      return "getdata";
     }
 };
 
