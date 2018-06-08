@@ -37,14 +37,21 @@ private:
   std::map<int, std::set<long>> txs_known_by_peer;
   std::map<long, std::set<long>> utxo;// map of <txid, [o0, ..., on]> where oi is an unspent oupoint corresponding to the tx with id txid
   std::map<long, std::vector<Block>> orphan_blocks;
+  std::set<long> objects_ids_to_request;
+  std::map<int, std::map<long, e_inv_type>> objects_to_request_from_peer;
+  std::map<int, std::map<long, e_inv_type>> objects_to_send_to_peer;
   double next_activity_time = 0;
 
   void do_set_next_activity_time();
   void process_messages();
   void handle_transactions(int relayed_by_peer_id, UnconfirmedTransactions *message);
+  void handle_inv(int relayed_by_peer_id, Inv *message);
+  void handle_getdata(int relayed_by_peer_id, GetData *message);
   double get_time_to_process_block(Block block);
   void send_blocks();
   void send_transactions();
+  void inv();
+  void getdata();
   void handle_orphan_blocks(Block block);
   bool blockchain_tip_updated(Block block);
   void reorg_txs(long new_tip_id, long old_tip_id);
