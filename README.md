@@ -46,17 +46,20 @@ bitcoin-simgrid$ bin/bitcoin-simgrid platform/default_platform.xml platform/trac
 
 
 ## Topology generation
-### With Full routing
+
+### With DijkstraCache routing (recommended)
 ```bash
-bitcoin-simgrid$ utils/createPlatformXml --file=platform/300_nodes_full_routing.xml --hosts_count=300 --edges=8 --routing=Full --seed=1
+bitcoin-simgrid$ utils/createPlatformXml --file=platform/300_nodes_dijkstracache_routing.xml --hosts_count=300 --edges=8 --routing=DijkstraCache --seed=1
 ```
+
 ### With Dijkstra routing
 ```bash
 bitcoin-simgrid$ utils/createPlatformXml --file=platform/300_nodes_dijkstra_routing.xml --hosts_count=300 --edges=8 --routing=Dijkstra --seed=1
 ```
-### With DijkstraCache routing
+
+### With Full routing
 ```bash
-bitcoin-simgrid$ utils/createPlatformXml --file=platform/300_nodes_dijkstracache_routing.xml --hosts_count=300 --edges=8 --routing=DijkstraCache --seed=1
+bitcoin-simgrid$ utils/createPlatformXml --file=platform/300_nodes_full_routing.xml --hosts_count=300 --edges=8 --routing=Full --seed=1
 ```
 
 ## Deployment generation
