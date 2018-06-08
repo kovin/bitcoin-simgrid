@@ -33,6 +33,7 @@ void Miner::do_set_next_activity_time()
   if (using_trace) {
     if (current_trace_index < trace.size()) {
       next_activity_time = trace[current_trace_index++].received;
+      // TODO: remove these debug lines
       std::cout << "espero generar " << trace[current_trace_index - 1].n_tx << " txs" << std::endl;
       std::cout << "espero incluir al menos " << trace[current_trace_index - 1].n_tx_only_in_block << " txs" << std::endl;
       std::cout << next_activity_time << std::endl;
@@ -62,6 +63,7 @@ void Miner::generate_activity()
   }
   std::cout << "next activity time" << next_activity_time << std::endl;
   do_set_next_activity_time();
+  Block *block;
   if (using_trace) {
     // I need to add to the block the coinbase tx and all the txs that only appeared
     // in the network when this block was broadcasted
@@ -70,14 +72,15 @@ void Miner::generate_activity()
       Transaction tx = create_transaction();
       mempool.insert(std::make_pair(tx.id, tx));
     }
-    XBT_INFO("creating a block with %ld txs and we expected %d", mempool.size(), traceItem.n_tx);
+    block = new Block(my_id, blockchain_height + 1, simgrid::s4u::Engine::get_clock(), blockchain_tip, difficulty, mempool);
+    XBT_INFO("creating block %ld with %ld txs and we expected %d", block->id, mempool.size(), traceItem.n_tx);
   } else {
     // I need to include the coinbase tx
     Transaction tx = create_transaction();
     mempool.insert(std::make_pair(tx.id, tx));
-    XBT_INFO("creating a block with %ld txs", mempool.size());
+    block = new Block(my_id, blockchain_height + 1, simgrid::s4u::Engine::get_clock(), blockchain_tip, difficulty, mempool);
+    XBT_INFO("creating block %ld with %ld txs", block->id, mempool.size());
   }
-  Block *block = new Block(my_id, blockchain_height + 1, simgrid::s4u::Engine::get_clock(), blockchain_tip, difficulty, mempool);
   handle_new_block(my_id, block);
   delete block;
 }
