@@ -11,7 +11,7 @@ public:
   double get_next_activity_time();
 
 protected:
-  long long difficulty;
+  long long difficulty;// current network difficulty
   std::set<long> known_txs_ids;// set of transactions ids we know about
   std::map<long, Transaction> mempool;// map of unconfirmed transactions: <txid, tx>
   void init_from_args(std::vector<std::string> args);

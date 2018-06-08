@@ -60,7 +60,7 @@ void Node::send_blocks()
     }
   }
   typename std::map<long, Block>::const_iterator it_block = blocks_to_broadcast.begin();
-  while(it_block != blocks_to_broadcast.end()) {
+  while (it_block != blocks_to_broadcast.end()) {
     // Remove from txs_to_broadcast the ones that got confirmed in this block
     txs_to_broadcast = DiffMaps(txs_to_broadcast, it_block->second.transactions);
     ++it_block;
@@ -119,7 +119,7 @@ void Node::process_messages()
   int messages_to_receive = 0;
   int received_messages = 0;
   void* data;
-  for(std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
+  for (std::vector<int>::iterator it_id = my_peers.begin(); it_id != my_peers.end(); it_id++) {
     int peer_id = *it_id;
     simgrid::s4u::MailboxPtr mbox = get_peer_incoming_mailbox(peer_id);
     if (!mbox->empty()) {
@@ -224,8 +224,7 @@ void Node::handle_orphan_blocks(Block block)
 
 bool Node::blockchain_tip_updated(Block block)
 {
-  std::map<long, KnownBlock>::iterator it = known_blocks_by_id.find(block.parent_id);
-  if (it == known_blocks_by_id.end()) {
+  if (known_blocks_by_id.find(block.parent_id) == known_blocks_by_id.end()) {
     orphan_blocks[block.parent_id].push_back(block);
     XBT_INFO("received orphan block %ld", block.id);
     return false;
