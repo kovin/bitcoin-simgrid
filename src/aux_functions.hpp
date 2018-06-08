@@ -132,6 +132,48 @@ std::set<KeyType> JoinMaps(const std::set<KeyType> & left, const std::map<KeyTyp
   return result;
 }
 
+template<typename KeyType, typename Value, typename OtherValue>
+std::map<KeyType, Value> IntersectMaps(const std::map<KeyType, Value> & left, const std::map<KeyType, OtherValue> & right)
+{
+  std::map<KeyType, Value> result;
+  typename std::map<KeyType, Value>::const_iterator il = left.begin();
+  typename std::map<KeyType, OtherValue>::const_iterator ir = right.begin();
+  while (il != left.end() && ir != right.end())
+  {
+    if (il->first == ir->first) {
+      result.insert(*il);
+      ++il;
+      ++ir;
+    } else if (il->first < ir->first) {
+      ++il;
+    } else {
+      ++ir;
+    }
+  }
+  return result;
+}
+
+template<typename KeyType, typename Value>
+std::map<KeyType, Value> IntersectMaps(const std::map<KeyType, Value> & left, const std::set<KeyType> & right)
+{
+  std::map<KeyType, Value> result;
+  typename std::map<KeyType, Value>::const_iterator il = left.begin();
+  typename std::set<KeyType>::const_iterator ir = right.begin();
+  while (il != left.end() && ir != right.end())
+  {
+    if (il->first == *ir) {
+      result.insert(*il);
+      ++il;
+      ++ir;
+    } else if (il->first < *ir) {
+      ++il;
+    } else {
+      ++ir;
+    }
+  }
+  return result;
+}
+
 template<typename KeyType>
 std::set<KeyType> JoinSets(const std::set<KeyType> & left, const std::set<KeyType> & right)
 {
@@ -174,7 +216,7 @@ std::set<KeyType> DiffSets(const std::set<KeyType> & left, const std::set<KeyTyp
 }
 
 template<typename KeyType>
-std::set<KeyType> InsersectSets(const std::set<KeyType> & left, const std::set<KeyType> & right)
+std::set<KeyType> IntersectSets(const std::set<KeyType> & left, const std::set<KeyType> & right)
 {
   std::set<KeyType> result;
   typename std::set<KeyType>::const_iterator il = left.begin();
