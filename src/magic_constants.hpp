@@ -18,4 +18,6 @@ static const unsigned int INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS = 2016;
 
 static const unsigned int AVERAGE_BYTES_PER_TX = 1500;
 
+static const unsigned int BASE_MSG_SIZE = 100;// Every message will have at least this many bytes
+
 #endif /* MAGIC_CONSTANTS */

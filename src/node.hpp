@@ -7,8 +7,6 @@
 class Node : public BaseNode
 {
 public:
-  double msg_size = 10000;
-
   explicit Node() {};
   explicit Node(std::vector<std::string> args);
   double get_next_activity_time();
