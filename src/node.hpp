@@ -2,7 +2,6 @@
 #define NODE_HPP
 
 #include "base_node.hpp"
-#include "known_block.hpp"
 
 class Node : public BaseNode
 {
@@ -18,8 +17,8 @@ protected:
   void init_from_args(std::vector<std::string> args);
   long blockchain_tip = 0;// The block id corresponding to the top of the best chain so far
   int blockchain_height = 0;// The block height corresponding to the top of the best chain so far
-  std::map<int, KnownBlock> known_blocks = {{0, KnownBlock(0, 0, 0, 0, {})}};// map of blocks we know about: <block-height, aggregated difficulty>
-  std::map<long, KnownBlock> known_blocks_by_id = {{0, KnownBlock(0, 0, 0, 0, {})}};// map of blocks we know about: <block-id, aggregated difficulty>
+  std::map<int, Block> known_blocks_by_height = {{0, Block()}};// map of blocks we know about: <block-height, aggregated difficulty>
+  std::map<long, Block> known_blocks_by_id = {{0, Block()}};// map of blocks we know about: <block-id, aggregated difficulty>
 
   std::string get_node_data_filename(int id);
   void generate_activity();

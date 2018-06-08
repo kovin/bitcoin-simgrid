@@ -230,23 +230,22 @@ bool Node::blockchain_tip_updated(Block block)
     XBT_INFO("received orphan block %ld", block.id);
     return false;
   }
-  long long agregated_difficulty = block.difficulty + it->second.agregated_difficulty;
-  KnownBlock new_known_block = KnownBlock(block.height, block.parent_id, agregated_difficulty, block.time, JustKeys(block.transactions));
-  known_blocks_by_id.insert(std::make_pair(block.id, new_known_block));
-  long long current_agregated_difficulty = known_blocks.find(blockchain_height)->second.agregated_difficulty;
+  known_blocks_by_id.insert(std::make_pair(block.id, block));
   // Check if we found a new best chain
-  if (agregated_difficulty > current_agregated_difficulty) {
+  // Given that each block's diffulty is simulated we only need a way for every node to agree on a certain best chain
+  // for our solution we achieve this concensus by comparing the randon block id and choosing the higher one
+  if (block.id > blockchain_tip) {
     if (block.parent_id != blockchain_tip) {
       XBT_INFO("reorg_txs");
       reorg_txs(block.id, blockchain_tip);
     }
     blockchain_tip = block.id;
     blockchain_height = block.height;
-    known_blocks.insert(std::make_pair(block.height, new_known_block));
+    known_blocks_by_height.insert(std::make_pair(block.height, block));
     if ((blockchain_height % INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS) == 0) {
       double expected_time = INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS * INTERVAL_BETWEEN_BLOCKS_IN_SECONDS;
       // We add "- 1" to simulate the off-by-one bug error in the reference client implementation
-      double base_time = known_blocks.find(blockchain_height - (INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS - 1))->second.time;
+      double base_time = known_blocks_by_height.find(blockchain_height - (INTERVAL_BETWEEN_DIFFICULTY_RECALC_IN_BLOCKS - 1))->second.time;
       double actual_time = block.time - base_time;
       long long new_difficulty = block.network_difficulty * expected_time / actual_time;
       XBT_INFO(
@@ -279,21 +278,21 @@ void Node::reorg_txs(long new_tip_id, long old_tip_id)
   long current_block_id = old_tip_id;
   std::set<long> known_txs_to_discard;
   while (current_block_id != common_parent_id) {
-    KnownBlock known_block = known_blocks_by_id.find(current_block_id)->second;
-    known_txs_to_discard = JoinSets(known_txs_to_discard, known_block.txs_ids);
-    current_block_id = known_block.parent_id;
+    Block block = known_blocks_by_id.find(current_block_id)->second;
+    known_txs_to_discard = JoinSets(known_txs_to_discard, JustKeys(block.transactions));
+    current_block_id = block.parent_id;
   }
   known_txs_ids = DiffSets(known_txs_ids, known_txs_to_discard);
   current_block_id = new_tip_id;
   std::set<long> known_txs_to_add;
   while (current_block_id != common_parent_id) {
-    KnownBlock known_block = known_blocks_by_id.find(current_block_id)->second;
-    known_txs_to_add = JoinSets(known_txs_to_add, known_block.txs_ids);
-    current_block_id = known_block.parent_id;
+    Block block = known_blocks_by_id.find(current_block_id)->second;
+    known_txs_to_add = JoinSets(known_txs_to_add, JustKeys(block.transactions));
+    current_block_id = block.parent_id;
   }
   known_txs_ids = JoinSets(known_txs_ids, known_txs_to_add);
   XBT_INFO(
-    "reorganizing blocks. knwon txs discarded %ld. known txs added %ld",
+    "reorganizing blocks. known txs discarded %ld. known txs added %ld",
     DiffSets(known_txs_to_discard, known_txs_to_add).size(),
     DiffSets(known_txs_to_add, known_txs_to_discard).size()
   );
