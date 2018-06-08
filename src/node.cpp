@@ -143,7 +143,7 @@ void Node::process_messages()
           handle_new_block(peer_id, static_cast<Block*>(data));
           break;
         case UNCONFIRMED_TRANSACTIONS:
-          handle_unconfirmed_transactions(peer_id, static_cast<UnconfirmedTransactions*>(data));
+          handle_transactions(peer_id, static_cast<UnconfirmedTransactions*>(data));
           break;
         default:
           THROW_IMPOSSIBLE;
@@ -302,13 +302,13 @@ long Node::find_common_parent_id(long new_parent_tip_id, long old_parent_tip_id)
 {
   std::set<long> parents_for_new_id = {new_parent_tip_id};
   std::set<long> parents_for_old_id = {old_parent_tip_id};
-  while (InsersectSets(parents_for_new_id, parents_for_old_id).size() == 0) {
+  while (IntersectSets(parents_for_new_id, parents_for_old_id).size() == 0) {
     new_parent_tip_id = known_blocks_by_id.find(new_parent_tip_id)->second.parent_id;
     old_parent_tip_id = known_blocks_by_id.find(old_parent_tip_id)->second.parent_id;
     parents_for_new_id.insert(new_parent_tip_id);
     parents_for_old_id.insert(old_parent_tip_id);
   }
-  return *(InsersectSets(parents_for_new_id, parents_for_old_id).begin());
+  return *(IntersectSets(parents_for_new_id, parents_for_old_id).begin());
 }
 
 double Node::get_time_to_process_block(Block block)
