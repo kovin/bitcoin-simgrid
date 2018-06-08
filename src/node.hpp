@@ -56,6 +56,7 @@ private:
   bool blockchain_tip_updated(Block block);
   void reorg_txs(long new_tip_id, long old_tip_id);
   long find_common_parent_id(long new_tip_id, long old_tip_id);
+  void cleanup();
 };
 
 #endif /* NODE_HPP */

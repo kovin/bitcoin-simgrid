@@ -32,6 +32,7 @@ protected:
   virtual void generate_activity() = 0;
   virtual void process_messages() = 0;
   virtual void send_messages() = 0;
+  virtual void cleanup() = 0;
 };
 
 #endif /* BASE_NODE_HPP */

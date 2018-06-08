@@ -123,7 +123,17 @@ void Node::getdata()
     }
   }
 }
+
+// After a round of receiving and sending messages we need to clean-up some structures that we don't need anymore
+void Node::cleanup()
+{
+  blocks_to_broadcast.clear();
+  blocks_known_by_peer.clear();
   txs_to_broadcast.clear();
+  txs_known_by_peer.clear();
+  objects_to_send_to_peer.clear();
+  objects_ids_to_request.clear();
+  objects_to_request_from_peer.clear();
 }
 
 void Node::generate_activity()

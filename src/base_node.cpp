@@ -20,6 +20,7 @@ void BaseNode::operator()()
     generate_activity();
     process_messages();
     send_messages();
+    cleanup();
     double sleep_duration = std::min(SLEEP_DURATION, get_next_activity_time() - simgrid::s4u::Engine::get_clock());
     simgrid::s4u::this_actor::sleep_for(sleep_duration);
   }
