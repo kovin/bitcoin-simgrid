@@ -10,11 +10,12 @@ import os
 CustomEnumType = enum.Enum("CustomEnumType", ("Full", "Dijkstra", "DijkstraCache"))
 
 parser = argparse.ArgumentParser(description = 'Create a platform xml file which will be compliant with SimGrid 4.1')
-parser.add_argument('--file', type = str, help = 'the file where to store the produdeced xml', required = True)
+parser.add_argument('--file', type = str, help = 'the file where to store the produced xml', required = True)
 parser.add_argument('--hosts_count', type = int, help = 'Number of hosts in the platform', required = True)
 parser.add_argument('--edges', type = int, help = 'Number of edges to attach from a new host to an existing host', required = True)
 parser.add_argument('--seed', type = int, help = 'Seed for networkx graph generator', required = False)
 parser.add_argument("--routing", type = str, action = "store", choices = tuple(t.name for t in CustomEnumType), default = CustomEnumType.Full.name)
+parser.add_argument('--without_supernodes', help = 'If present, the tool will avoid considering the existence of nodes with more peers than expected', action='store_true')
 
 args = parser.parse_args()
 
@@ -40,37 +41,47 @@ def add_route_between_hosts(G, zone, origin, destiny):
         route.append(link_ctn)
 
 def add_zone_nodes(zone):
-    #G = nx.barabasi_albert_graph(args.hosts_count, args.edges, args.seed)
-    #G = nx.connected_watts_strogatz_graph(args.hosts_count, args.edges, .2, tries=100, seed=args.seed)
-    G = nx.powerlaw_cluster_graph(args.hosts_count, args.edges, .6, seed=args.seed)
-    for n in G.nodes():
+    '''
+    We use different topologies for the physical and logical platforms.
+    We use a Barabasi topology for the physical platform because it has similarities
+    with the internet topology.
+    We use a power law topology for the logical platform because it has similarities
+    to the Bitcoin topology where we have a few super-nodes with a much higher degree
+    than the average.
+    '''
+    G_physical = nx.barabasi_albert_graph(args.hosts_count, args.edges, args.seed)
+    if args.without_supernodes:
+        G_logical = nx.connected_watts_strogatz_graph(args.hosts_count, args.edges, .3, tries=100, seed=args.seed)
+    else:
+        G_logical = nx.powerlaw_cluster_graph(args.hosts_count, args.edges, .6, seed=args.seed)
+    for n in G_physical.nodes():
         host = et.Element('host')
         host.set('id', 'node-%s' % n)
-        # Set computational power proportionally to the accepted edges that we will have
-        host.set('speed', '%sGf' % (1.0 * len(G.edges(n)) / args.edges))
+        # Set computational power proportionally to the logical peers that we will have
+        host.set('speed', '%sGf' % (1.0 * len(G_logical.edges(n)) / args.edges))
         zone.append(host)
         edge_number = 0
-    for e in G.edges():
+    for e in G_physical.edges():
         (origin, destiny) = e
-        G.add_edge(origin, destiny, id = edge_number)
+        G_physical.add_edge(origin, destiny, id = edge_number)
         link = et.Element('link')
         link.set('id', 'l%s' % edge_number)
         link.set('bandwidth', '100MBps')
-        link.set('latency', '10ms')
+        link.set('latency', '158ms')
         zone.append(link)
         edge_number += 1
     if CustomEnumType.Full.name == args.routing:
         for origin in range(0, args.hosts_count):
             for destiny in range(origin + 1, args.hosts_count):
-                add_route_between_hosts(G, zone, origin, destiny)
-                add_route_between_hosts(G, zone, destiny, origin)
+                add_route_between_hosts(G_physical, zone, origin, destiny)
+                add_route_between_hosts(G_physical, zone, destiny, origin)
     else:
-        for e in G.edges():
+        for e in G_physical.edges():
             (origin, destiny) = e
-            add_route_between_hosts(G, zone, origin, destiny)
-            add_route_between_hosts(G, zone, destiny, origin)
+            add_route_between_hosts(G_physical, zone, origin, destiny)
+            add_route_between_hosts(G_physical, zone, destiny, origin)
 
-def getTempFilenameWithXmlAndDoctypeHeaders():
+def get_temp_filename_with_xml_and_doctype_headers():
     headers = '%s\n%s\n<platform version="4.1"></platform>\n' % (get_xml_header(), get_doctype_header())
     f = NamedTemporaryFile(delete=False)
     f.write(headers)
@@ -78,7 +89,7 @@ def getTempFilenameWithXmlAndDoctypeHeaders():
     return f.name
 
 def generate_platform():
-    tempFilename = getTempFilenameWithXmlAndDoctypeHeaders()
+    tempFilename = get_temp_filename_with_xml_and_doctype_headers()
     tree = et.parse(tempFilename)
     root = tree.getroot()
     zone = et.Element('zone')

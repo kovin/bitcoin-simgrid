@@ -1,0 +1,55 @@
+{
+  "block_hash": "00000000000000000033230a3fe57d2ec9ca36842f0d4c20c09d39d82ac22137",
+  "block_height": 514981,
+  "block_index": 28,
+  "hash": "07cbcf3049c655867c9dc0e2081dd8aa74376837628473ef0edcfd9253b152a0",
+  "addresses": [
+    "3GJgjrFnb2obf8UTiXmY1LpzvEWSV8Jrqo"
+  ],
+  "total": 45204400,
+  "fees": 40000,
+  "size": 126,
+  "preference": "high",
+  "confirmed": "2018-03-24T16:19:51Z",
+  "received": "2018-03-24T16:19:51Z",
+  "ver": 1,
+  "double_spend": false,
+  "vin_sz": 1,
+  "vout_sz": 2,
+  "confirmations": 7572,
+  "confidence": 1,
+  "inputs": [
+    {
+      "prev_hash": "6004c0a687158704d68b29d1899007763b349d16bf8dda653522b818cffe5a6e",
+      "output_index": 3,
+      "output_value": 45244400,
+      "sequence": 4294967295,
+      "script_type": "pay-to-witness-script-hash",
+      "age": 514980,
+      "witness": [
+        "",
+        "304402203b8256e48215c0f0232a34af8b94a434c3f28b6b13f4005eda1902f1c8ae98ce0220272e7b96b14bc6e331852efce6ebfe9d70be624c07418fbbcf6a3018bbf72b4201",
+        "304502210097ecd925f2766609dec1231134e04d45b4ec69cbd2eaf8c7522f3812fc63015d022004dbb9b7a44cb41cc2f3384a85b739ed165d6457d1f3b14ea2df0b9a03f819bb01",
+        "52210375e00eb72e29da82b89367947f29ef34afb75e8654f6ea368e0acdfd92976b7c2103a1b26313f430c4b15bb1fdce663207659d8cac749a0e53d70eff01874496feff2103c96d495bfdd5ba4145e3e046fee45e84a8a48ad05bd8dbb395c011a32cf9f88053ae"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "value": 20000000,
+      "script": "a914a050b8a65541dd82e272f181c246ec938f534da887",
+      "spent_by": "df8548010e4b6ecb1d6e0916804002db0233594fc13a810480a4d34c1cd940a7",
+      "addresses": [
+        "3GJgjrFnb2obf8UTiXmY1LpzvEWSV8Jrqo"
+      ],
+      "script_type": "pay-to-script-hash"
+    },
+    {
+      "value": 25204400,
+      "script": "0020701a8d401c84fb13e6baf169d59684e17abd9fa216c8cc5b9fc63d622ff8c58d",
+      "spent_by": "58200d05234bff6f26adbe0c37dae04661814803efb43312a0cf14f8bb738afe",
+      "addresses": null,
+      "script_type": "pay-to-witness-script-hash"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "block_hash": "00000000000000000033230a3fe57d2ec9ca36842f0d4c20c09d39d82ac22137",
+  "block_height": 514981,
+  "block_index": 598,
+  "hash": "d881c1574a1aa3630342277c4e1bfe80aff92f92070357f946d0416a3a0013d1",
+  "addresses": [
+    "15XL8Xpag18XyRJMho4qgBMEEeGFa1L8VY",
+    "1DUb2YYbQA1jjaNYzVXLZ7ZioEhLXtbUru"
+  ],
+  "total": 497830,
+  "fees": 2170,
+  "size": 256,
+  "preference": "medium",
+  "confirmed": "2018-03-24T16:19:51Z",
+  "received": "2018-03-24T16:19:51Z",
+  "ver": 1,
+  "lock_time": 514980,
+  "double_spend": false,
+  "vin_sz": 1,
+  "vout_sz": 3,
+  "data_protocol": "omni",
+  "confirmations": 7588,
+  "confidence": 1,
+  "inputs": [
+    {
+      "prev_hash": "d3104bcf8a42c0ebaaec07771f71754c42e9115e6bbfe51dca5ff97e40b0025e",
+      "output_index": 0,
+      "script": "473044022074cecd8d22cfe1f920666bf273236b17e2cf75d0a514b4313627bc371b293cad02204e93457f6b7069142be211ff4eb4fc2a76ede3d8a9ff958b9dececdb22f307160121037b98dc04f334c8e4b52ef03a03017a3238222aad9d576ef2f69a825b773e0804",
+      "output_value": 500000,
+      "sequence": 4294967294,
+      "addresses": [
+        "15XL8Xpag18XyRJMho4qgBMEEeGFa1L8VY"
+      ],
+      "script_type": "pay-to-pubkey-hash",
+      "age": 514981
+    }
+  ],
+  "outputs": [
+    {
+      "value": 497284,
+      "script": "76a914319cf3669edb8133c05b366a93c4b8e48d42806b88ac",
+      "spent_by": "fcae65ee706bf0fde5d2753f8e9e46a6376075fc101cf16a2e6bf66f50ee1555",
+      "addresses": [
+        "15XL8Xpag18XyRJMho4qgBMEEeGFa1L8VY"
+      ],
+      "script_type": "pay-to-pubkey-hash"
+    },
+    {
+      "value": 0,
+      "script": "6a146f6d6e69000000000000001f0000019e3a9f9f00",
+      "addresses": null,
+      "script_type": "null-data",
+      "data_hex": "6f6d6e69000000000000001f0000019e3a9f9f00"
+    },
+    {
+      "value": 546,
+      "script": "76a91488d924f51033b74a895863a5fb57fd545529df7d88ac",
+      "spent_by": "fcae65ee706bf0fde5d2753f8e9e46a6376075fc101cf16a2e6bf66f50ee1555",
+      "addresses": [
+        "1DUb2YYbQA1jjaNYzVXLZ7ZioEhLXtbUru"
+      ],
+      "script_type": "pay-to-pubkey-hash"
+    }
+  ]
+}

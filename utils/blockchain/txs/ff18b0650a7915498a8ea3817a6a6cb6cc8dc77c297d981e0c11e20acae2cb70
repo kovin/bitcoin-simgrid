@@ -1,0 +1,62 @@
+{
+  "block_hash": "00000000000000000033230a3fe57d2ec9ca36842f0d4c20c09d39d82ac22137",
+  "block_height": 514981,
+  "block_index": 1327,
+  "hash": "ff18b0650a7915498a8ea3817a6a6cb6cc8dc77c297d981e0c11e20acae2cb70",
+  "addresses": [],
+  "total": 82063,
+  "fees": 1105,
+  "size": 166,
+  "preference": "low",
+  "relayed_by": "108.217.87.126:8333",
+  "confirmed": "2018-03-24T16:19:51Z",
+  "received": "2018-03-24T16:11:33.011Z",
+  "ver": 1,
+  "double_spend": false,
+  "vin_sz": 2,
+  "vout_sz": 2,
+  "confirmations": 7619,
+  "confidence": 1,
+  "inputs": [
+    {
+      "prev_hash": "3027fed944d3bebd678a6d0fa97956b9c163e9562510f6c341bd215071ba4012",
+      "output_index": 1,
+      "output_value": 72228,
+      "sequence": 4294967295,
+      "script_type": "pay-to-witness-pubkey-hash",
+      "age": 514973,
+      "witness": [
+        "3045022100b87fd37f0645faa7e75d18cea4b802ca747e0e761dae5f23af6a8467cd29f7bf02205ee5d3baa9b96d718f3551f6ce3c6afd36eccfdb593514fcf05413eacb5f309501",
+        "0338bea7cdbbbcbf6e2cdb1d6b2a05807a6db916f51bb4b1c0dbeeb8844e0bad07"
+      ]
+    },
+    {
+      "prev_hash": "676d2def1be6bcd029a40e2fbc534b50807f57288141e4bbd9886b5234e10dbe",
+      "output_index": 0,
+      "output_value": 10940,
+      "sequence": 4294967295,
+      "script_type": "pay-to-witness-pubkey-hash",
+      "age": 514975,
+      "witness": [
+        "304402207f090f56dc5e81abd5ed7e5e242abaeeab230f291a9b6945540c14fd6d307c6302207b7bc75406464d9293c78f5bfd692c1b8830064554a33a1cf40195c53900994901",
+        "02ec23b27239301e00a673a6e5212107e434968db8e9dd4ac7ab850a7164001836"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "value": 22000,
+      "script": "00206d6b8c897e2d87c33ab190ee5bbc583f332e944ab4c51906255e8cee172e76ae",
+      "spent_by": "ba3112cb11eb674867b840f7a4d096384efc1f71b92475c596c5d9e1d9569111",
+      "addresses": null,
+      "script_type": "pay-to-witness-script-hash"
+    },
+    {
+      "value": 60063,
+      "script": "0014e1ba070e9399c81f137d05140c6e5013eaff35d6",
+      "spent_by": "34761cf803d5ffbda4ab1599882a4afab4dd1086a0a32e555061572a8ca4cd17",
+      "addresses": null,
+      "script_type": "pay-to-witness-pubkey-hash"
+    }
+  ]
+}

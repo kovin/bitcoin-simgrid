@@ -1,0 +1,61 @@
+{
+  "block_hash": "000000000000000000173a10f6052c1cce3a331f3c22a1125b2835d710914924",
+  "block_height": 514977,
+  "block_index": 43,
+  "hash": "fe10ac4eb3359d85685d22b81b2d5c4526d539a00833c2f346db6260125e385d",
+  "addresses": [
+    "1Pkbs8DeeacAcuQXfcsuFZWSbNAoxXUkyo",
+    "3GfdBTZ2w7Pk8HnrydcMQ6ACPTvc9eAuJf"
+  ],
+  "total": 69031432,
+  "fees": 22896,
+  "size": 152,
+  "preference": "high",
+  "confirmed": "2018-03-24T16:03:25Z",
+  "received": "2018-03-24T16:03:25Z",
+  "ver": 1,
+  "double_spend": false,
+  "vin_sz": 1,
+  "vout_sz": 2,
+  "confirmations": 7671,
+  "confidence": 1,
+  "inputs": [
+    {
+      "prev_hash": "f380f9c5324bcd542254447150fd428e7ef78da769c2fa3e78dbcba0cbe93fbb",
+      "output_index": 1,
+      "script": "220020e20dcd795e739e3a4fa86d3d6d3ece893ccf2bdf60ae7c3581ec01ee711fa2fd",
+      "output_value": 69054328,
+      "sequence": 4294967295,
+      "addresses": [
+        "3GfdBTZ2w7Pk8HnrydcMQ6ACPTvc9eAuJf"
+      ],
+      "script_type": "pay-to-script-hash",
+      "age": 514939,
+      "witness": [
+        "",
+        "3044022057cf6cfc3a0226df9a68c011d7a10778bbe03bf9f17676399f3584e9cfa3016202204f8c7c8d85a3bd680f16993309fde51b1d8d422c1612f4c96d109f33f4d5525101",
+        "3044022010d2abd8b42b4ade559ceafac66300ba6fb53ed1222ac0874318a44085bbc8c7022059424ac2c563778ccfe99d4ef4da9210d40393e6110a4b26bac3ac41cbedf15401",
+        "522102426874c515fc445f62ae1d99fcfd732f6c30f787fc2dfefa8a397f0d1275f85a2102b4b9508795c9b5e530128cc0c5c1afd3d66ea7199878ed620e88fbb32dcf338052ae"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "value": 246100,
+      "script": "76a914f991c1bc6323675b634de92b72e1deb5990b14a588ac",
+      "addresses": [
+        "1Pkbs8DeeacAcuQXfcsuFZWSbNAoxXUkyo"
+      ],
+      "script_type": "pay-to-pubkey-hash"
+    },
+    {
+      "value": 68785332,
+      "script": "a914a4467c6bf16cd2a7d50c5dbd67ccdd21db19241187",
+      "spent_by": "2a32a8c5dc45224b3459f03181674d1b5b3a3612a0d287f5ce1f2c16103b7e20",
+      "addresses": [
+        "3GfdBTZ2w7Pk8HnrydcMQ6ACPTvc9eAuJf"
+      ],
+      "script_type": "pay-to-script-hash"
+    }
+  ]
+}

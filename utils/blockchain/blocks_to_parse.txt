@@ -1,0 +1,17 @@
+0000000000000000004014e67df53a738b09a24b233950ca6169515f34980c75
+0000000000000000004b725898a3815017126b49d66100e501b6fd3ed5045143
+000000000000000000237662fbc3c212ddded33aa10b16cab221a2b70fdc11ad
+000000000000000000173a10f6052c1cce3a331f3c22a1125b2835d710914924
+
+
+import datetime
+import json
+import os
+
+
+date = datetime.datetime.strptime('2018-04-24T16:09:51Z','%Y-%m-%dT%H:%M:%SZ')
+seconds = (a -b).total_seconds()
+f = open('path/to/tile')
+json.load(f)
+
+onlyfiles = [f for f in os.listdir(mypath) if os.path.isfile(os.path.join(mypath, f))]

@@ -1,0 +1,55 @@
+{
+  "block_hash": "0000000000000000004014e67df53a738b09a24b233950ca6169515f34980c75",
+  "block_height": 514980,
+  "block_index": 7,
+  "hash": "6c1e9d654e139ba492798c50f29bdec93ba3cc07716fab0cfca63c6689da4092",
+  "addresses": [
+    "3NBq8vzACPc5PKsww61JnjwsPQcVcDxf59"
+  ],
+  "total": 677268,
+  "fees": 60000,
+  "size": 126,
+  "preference": "high",
+  "confirmed": "2018-03-24T16:09:51Z",
+  "received": "2018-03-24T16:09:51Z",
+  "ver": 1,
+  "double_spend": false,
+  "vin_sz": 1,
+  "vout_sz": 2,
+  "confirmations": 7631,
+  "confidence": 1,
+  "inputs": [
+    {
+      "prev_hash": "44b8d8386fc39a952cc3ae5fafae3ca454d9969da850a8b9f9b7687014f79cf4",
+      "output_index": 2,
+      "output_value": 737268,
+      "sequence": 4294967295,
+      "script_type": "pay-to-witness-script-hash",
+      "age": 514911,
+      "witness": [
+        "",
+        "3045022100b4cb0a04182f9bb821e9929bdd77d8f93339580ea0b6922bf26716f94034300e02200e6e68aa4a5d4c109065e3b03b2eb315ca39f059b40593db67566a2671a3526301",
+        "3045022100e7b5416e3072d24bc6a209a0db32c1f520046254db716da7a99613e7943318b70220717488476ca992697ce83bcdfe8f06f94b55f802fa6b85a0300301fede4a792c01",
+        "52210375e00eb72e29da82b89367947f29ef34afb75e8654f6ea368e0acdfd92976b7c2103a1b26313f430c4b15bb1fdce663207659d8cac749a0e53d70eff01874496feff2103c96d495bfdd5ba4145e3e046fee45e84a8a48ad05bd8dbb395c011a32cf9f88053ae"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "value": 475000,
+      "script": "a914e0d59313c5a86a685df9e70554fd67b35b5b30fd87",
+      "spent_by": "3c00a704b171c018c8054fb6cad5f6665ad2892da4909ee6ef27fa7d90e37af0",
+      "addresses": [
+        "3NBq8vzACPc5PKsww61JnjwsPQcVcDxf59"
+      ],
+      "script_type": "pay-to-script-hash"
+    },
+    {
+      "value": 202268,
+      "script": "0020701a8d401c84fb13e6baf169d59684e17abd9fa216c8cc5b9fc63d622ff8c58d",
+      "spent_by": "b14f3e3fc3c59eb9b94fff6cae9d8aa999127ef082a3ff03ecda0b72283e0b11",
+      "addresses": null,
+      "script_type": "pay-to-witness-script-hash"
+    }
+  ]
+}

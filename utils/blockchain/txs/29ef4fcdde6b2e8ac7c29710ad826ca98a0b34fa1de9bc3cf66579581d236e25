@@ -1,0 +1,54 @@
+{
+  "block_hash": "00000000000000000033230a3fe57d2ec9ca36842f0d4c20c09d39d82ac22137",
+  "block_height": 514981,
+  "block_index": 969,
+  "hash": "29ef4fcdde6b2e8ac7c29710ad826ca98a0b34fa1de9bc3cf66579581d236e25",
+  "addresses": [
+    "3CFPzHHhsDg5k5pgtc1zkmGEo6jG3nHasU"
+  ],
+  "total": 457473040,
+  "fees": 1018,
+  "size": 114,
+  "preference": "medium",
+  "relayed_by": "85.228.130.35:8333",
+  "confirmed": "2018-03-24T16:19:51Z",
+  "received": "2018-03-24T16:12:54.429Z",
+  "ver": 1,
+  "double_spend": false,
+  "vin_sz": 1,
+  "vout_sz": 2,
+  "confirmations": 7609,
+  "confidence": 1,
+  "inputs": [
+    {
+      "prev_hash": "453079b425c3b406553589802967b95c0208cac5e15ad4a1f8167fe950d9b979",
+      "output_index": 1,
+      "output_value": 457474058,
+      "sequence": 4294967295,
+      "script_type": "pay-to-witness-pubkey-hash",
+      "age": 514976,
+      "witness": [
+        "3045022100b82b1eef5955ef925d5fd9188a0bd790f114b82d19d16af8c56a4c4b53910f0202200f35c185a0ca4636a9c88730a6301569391dcc037bb2b398e9bfb7a0617ea6f801",
+        "03151e77c565a2562df03754f2e2cc09a4cb79f87f427220d2c9632a4996b76be3"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "value": 1549864,
+      "script": "a91473d0fcb1c15f1d1789ee4f90e9982fb9b4a4e35b87",
+      "spent_by": "6e96185ee1c05eb6183df81433afd6a0b69955da5c4fad783affe1e2ec901e4f",
+      "addresses": [
+        "3CFPzHHhsDg5k5pgtc1zkmGEo6jG3nHasU"
+      ],
+      "script_type": "pay-to-script-hash"
+    },
+    {
+      "value": 455923176,
+      "script": "00140692830df304590f6c8c2a5249fca37849f53596",
+      "spent_by": "9dd26d5fd595e3d64201788ecf21e14cebe234d1c99408b3451bbf6f939fe989",
+      "addresses": null,
+      "script_type": "pay-to-witness-pubkey-hash"
+    }
+  ]
+}

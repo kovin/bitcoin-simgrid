@@ -1,0 +1,62 @@
+{
+  "block_hash": "000000000000000000173a10f6052c1cce3a331f3c22a1125b2835d710914924",
+  "block_height": 514977,
+  "block_index": 474,
+  "hash": "ea4819d619f1936a0743796dddf803d1f07eaf87741a502f6b9103261b11734e",
+  "addresses": [
+    "1PyG4VVcQ6z5bGPoU1V5X199KSJSLxQmyQ",
+    "3HatrGzWpd73boUvaaQPgVaGXkZyALVxF1",
+    "3JDpR9MVQgrCBdXXcpA4dTFtL8c7RT4QEB"
+  ],
+  "total": 22138262,
+  "fees": 1738,
+  "size": 152,
+  "preference": "medium",
+  "confirmed": "2018-03-24T16:03:25Z",
+  "received": "2018-03-24T16:03:25Z",
+  "ver": 1,
+  "double_spend": false,
+  "vin_sz": 1,
+  "vout_sz": 2,
+  "confirmations": 7697,
+  "confidence": 1,
+  "inputs": [
+    {
+      "prev_hash": "1abd016768c56a9d26198e6f31b6e153dd50a2092d95703dce7eec3eadaa8bea",
+      "output_index": 2,
+      "script": "220020f3383b7308368a0372cef33e68888352ec802cfee7ec91c845cd8f4c2124e2d5",
+      "output_value": 22140000,
+      "sequence": 4294967295,
+      "addresses": [
+        "3HatrGzWpd73boUvaaQPgVaGXkZyALVxF1"
+      ],
+      "script_type": "pay-to-script-hash",
+      "age": 514977,
+      "witness": [
+        "",
+        "30450221009fd37230a829970afb3677fb7ce76044c4f7f8a38aed4215769d64100cbde2eb022036f848bb7c1111f741a80533ec4cbe9568b879988259303f09e2d8805592c38001",
+        "304402204c322441bb7eccfb9d401a19cf7b8be1e628710f88dec387f3cf78f57a4a529002201ee39209bbcfa0e020dffb823ff8c7d73a3eed0a3ea29dc6f49447c6daa140db01",
+        "52210250238ecc72a773c9989893c0cdde37469df175e02d0b89d55865f2cf43037f0721021c2ed47fe335632f669e82a67f8e65c7fe818ad9b109100c93f3a4d1cfc2ebe421038b9b90c0d326782a36e865fcbadaa83265c149c47312811ca7cbaaafd18b8f7953ae"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "value": 863000,
+      "script": "76a914fbf6a1f9f57d61ae8593152eaec92e9384f70cdf88ac",
+      "addresses": [
+        "1PyG4VVcQ6z5bGPoU1V5X199KSJSLxQmyQ"
+      ],
+      "script_type": "pay-to-pubkey-hash"
+    },
+    {
+      "value": 21275262,
+      "script": "a914b5554d49301b8e714dbf0256af624b4c752acfce87",
+      "spent_by": "867444bee9fc6d065374ba1bcd84f3d3432e5fe03d6dda86a65bfdcf3f59df4b",
+      "addresses": [
+        "3JDpR9MVQgrCBdXXcpA4dTFtL8c7RT4QEB"
+      ],
+      "script_type": "pay-to-script-hash"
+    }
+  ]
+}

@@ -1,14 +1,15 @@
 #ifndef MESSAGE_HPP
 #define MESSAGE_HPP
 
+#include "magic_constants.hpp"
 #include "aux_functions.hpp"
 #include <set>
 
 typedef enum
 {
   MESSAGE_BLOCK,
-  MESSAGE_TRANSACTION,
-  UNCONFIRMED_TRANSACTIONS,
+  MESSAGE_TX,
+  MESSAGE_TXS,
   MESSAGE_INV,
   MESSAGE_GETDATA,
 } e_message_type;
@@ -22,118 +23,182 @@ typedef enum
 class Message
 {
 public:
-  long id;
-  int peer_id;
-  long size;
-  Message(int peer_id, long size) : peer_id(peer_id), size(size)
+  Message(long size) : size(size)
   {
     id = lrand();
-  };
-  Message(int peer_id): peer_id(peer_id), size(0)
+  }
+
+  Message(): size(0)
   {
     id = lrand();
-  };
-  virtual e_message_type get_type() = 0;
-  virtual std::string get_type_name() = 0;
+  }
+
+  long get_id() const
+  {
+    return id;
+  }
+
+  long get_size() const
+  {
+    return size;
+  }
+
+  virtual e_message_type get_type() const = 0;
+
   ~Message() = default;
+protected:
+  long size;
+private:
+  long id;
 };
 
 class Transaction : public Message
 {
-  public:
-    Transaction () : Message(-1) {}
+public:
+  Transaction() : Message(-1) {}
 
-    Transaction (int peer_id, long size) : Message(peer_id, size) { };
+  Transaction(long size, long fee_per_byte, double confirmed) : Message(size), fee_per_byte(fee_per_byte), confirmed(confirmed) { };
 
-    e_message_type get_type()
-    {
-      return MESSAGE_TRANSACTION;
-    }
+  e_message_type get_type() const
+  {
+    return MESSAGE_TX;
+  }
 
-    std::string get_type_name() {
-      return "transaction";
-    }
+  long get_fee_per_byte() const
+  {
+    return fee_per_byte;
+  }
+
+  double get_confirmed() const
+  {
+    return confirmed;
+  }
+private:
+  long fee_per_byte;
+  double confirmed;
 };
 
 class Block : public Message
 {
-  public:
-    int height;
-    long parent_id;
-    std::map<long, Transaction> transactions;
-    long long network_difficulty;
-    double time;
-    Block () : Message(-1) {}
+public:
+  Block() : Message(-1), accumulated_difficulty(0) {}
 
-    Block (int peer_id, int height, double time, long parent_id, long long network_difficulty, std::map<long, Transaction> transactions)
-    : Message(peer_id), height(height), time(time), parent_id(parent_id), network_difficulty(network_difficulty), transactions(transactions)
-    {
-        // size += 1000000; // Revisar
-        for (auto const& idAndTransaction : transactions)
-        {
-          size += idAndTransaction.second.size;
-        }
-        //difficulty = llrand(network_difficulty);
-    };
-
-    e_message_type get_type()
-    {
-      return MESSAGE_BLOCK;
+  Block(int height, double time, long parent_id, unsigned long long network_difficulty, unsigned long long accumulated_difficulty, std::vector<Transaction> txs, int miner_id = 0)
+  : Message(), height(height), time(time), parent_id(parent_id), network_difficulty(network_difficulty), accumulated_difficulty(accumulated_difficulty), transactions(txs), miner_id(miner_id)
+  {
+    for (auto tx : txs) {
+      size += tx.get_size();
+      transactions_map.insert(std::make_pair(tx.get_id(), tx));
     }
+  };
 
-    std::string get_type_name() {
-      return "block";
-    }
+  e_message_type get_type() const
+  {
+    return MESSAGE_BLOCK;
+  }
+
+  int get_height() const
+  {
+    return height;
+  }
+
+  long get_parent_id() const
+  {
+    return parent_id;
+  }
+
+  int get_miner_id() const
+  {
+    return miner_id;
+  }
+
+  std::vector<Transaction> get_transactions() const
+  {
+    return transactions;
+  }
+
+  std::map<long, Transaction> get_transactions_map() const
+  {
+    return transactions_map;
+  }
+
+  unsigned long long get_network_difficulty() const
+  {
+    return network_difficulty;
+  }
+
+  unsigned long long get_accumulated_difficulty() const
+  {
+    return accumulated_difficulty;
+  }
+
+  double get_time() const
+  {
+    return time;
+  }
+private:
+  int height;
+  long parent_id;
+  std::vector<Transaction> transactions;
+  std::map<long, Transaction> transactions_map;
+  unsigned long long network_difficulty;
+  unsigned long long accumulated_difficulty;
+  double time;
+  int miner_id;
 };
 
-class UnconfirmedTransactions : public Message
+class Transactions : public Message
 {
-  public:
-    std::map<long, Transaction> unconfirmed_transactions;
-    UnconfirmedTransactions(int peer_id, std::map<long, Transaction> unconfirmed_transactions) : Message(peer_id), unconfirmed_transactions(unconfirmed_transactions) { };
+public:
+  Transactions(std::map<long, Transaction> txs) : Message(), transactions_map(txs) { };
 
-    e_message_type get_type()
-    {
-      return UNCONFIRMED_TRANSACTIONS;
-    }
+  e_message_type get_type() const
+  {
+    return MESSAGE_TXS;
+  }
 
-    std::string get_type_name() {
-      return "unconfirmed_transactions";
-    }
+  std::map<long, Transaction> get_transactions_map() const
+  {
+    return transactions_map;
+  }
+private:
+  std::map<long, Transaction> transactions_map;
 };
 
 class Inv : public Message
 {
-  public:
-    std::map<long, e_inv_type> objects;
-    Inv(int peer_id, std::map<long, e_inv_type> objects) : Message(peer_id), objects(objects) { };
+public:
+  Inv(std::map<long, e_inv_type> objects) : Message(BASE_MSG_SIZE), objects(objects) { };
 
-    e_message_type get_type()
-    {
-      return MESSAGE_INV;
-    }
+  e_message_type get_type() const
+  {
+    return MESSAGE_INV;
+  }
 
-    std::string get_type_name()
-    {
-      return "inv";
-    }
+  std::map<long, e_inv_type> get_objects()
+  {
+    return objects;
+  }
+private:
+  std::map<long, e_inv_type> objects;
 };
 
 class GetData : public Message
 {
-  public:
-    std::map<long, e_inv_type> objects;
-    GetData(int peer_id, std::map<long, e_inv_type> objects) : Message(peer_id), objects(objects) { };
+public:
+  GetData(std::set<long> objects) : Message(BASE_MSG_SIZE), objects(objects) { };
 
-    e_message_type get_type()
-    {
-      return MESSAGE_GETDATA;
-    }
+  e_message_type get_type() const
+  {
+    return MESSAGE_GETDATA;
+  }
 
-    std::string get_type_name()
-    {
-      return "getdata";
-    }
+  std::set<long> get_objects()
+  {
+    return objects;
+  }
+private:
+  std::set<long> objects;
 };
 
 #endif /* MESSAGE_HPP */

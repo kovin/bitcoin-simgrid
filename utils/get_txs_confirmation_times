@@ -1,0 +1,76 @@
+#!/usr/bin/php
+<?
+
+$txs = [];
+
+while ($line = fgets(STDIN)) {
+    $line = rtrim($line);
+    // Check creation time
+    if (preg_match('#^(?P<time>\d+(?:\.\d+)?) .*creating tx (?P<tx_id>\d+)#', $line, $matches)) {
+        $tx_id = $matches['tx_id'];
+        $time = (float) $matches['time'];
+        $txs[$tx_id]['creation'] = $time;
+    }
+    // Check received time
+    else if (preg_match('#^(?P<time>\d+(?:\.\d+)?)\s+node-(?P<node_id>\d+): received tx (?P<tx_id>\d+)#', $line, $matches)) {
+        $tx_id = $matches['tx_id'];
+        $time = (float) $matches['time'];
+        $txs[$tx_id]['received'][$matches['node_id']] = $time;
+    }
+    // Check consensus time
+    else if (preg_match('#^(?P<time>\d+(?:\.\d+)?)\s+node-(?P<node_id>\d+): confirmed tx (?P<tx_id>\d+) .* FOR_ALL_NODES$#', $line, $matches)) {
+        $tx_id = $matches['tx_id'];
+        $time = (float) $matches['time'];
+        $txs[$tx_id]['consensus'] = $time;
+    }
+    // Check confirmation time
+    else if (preg_match('#^(?P<time>\d+(?:\.\d+)?)\s+node-(?P<node_id>\d+): confirmed tx (?P<tx_id>\d+)#', $line, $matches)) {
+        $tx_id = $matches['tx_id'];
+        $time = (float) $matches['time'];
+        // Check if we are in the first confirmation
+        if (empty($txs[$tx_id]['confirmed']) || ($time < $txs[$tx_id]['confirmed'])) {
+            $txs[$tx_id]['confirmed'] = $time;
+            $txs[$tx_id]['confirmed_in_node_id'] = $matches['node_id'];
+        }
+    }
+}
+
+foreach ($txs as $tx_id => $tx) {
+    // Remove the txs that didn't get to consensus
+    /*if (empty($tx['consensus'])) {
+        unset($txs[$tx_id]);
+    }*/
+    echo "$tx_id\n";
+    if ($tx_id === "68155591087070200") {
+        var_dump($tx);exit;
+    }
+    if (empty($tx['consensus'])) {
+        $txs[$tx_id]['consensus'] = -1;
+        $txs[$tx_id]['confirmed'] = -1;
+        /*if (empty($tx['confirmed'])) {
+            unset($txs[$tx_id]);
+        } else {
+            $txs[$tx_id]['consensus'] = -1;
+        }*/
+    }
+}
+
+foreach ($txs as &$tx) {
+    // Set the received time of a tx as the one corresponding to the first node that confirmed it
+    if (empty($tx['received'])) {
+        $tx['received'] = $tx['creation'];
+    } else {
+        $tx['received'] = $tx['received'][$tx['confirmed_in_node_id']];
+    }
+    // Remove this attribute that we won't need any longer
+    unset($tx['confirmed_in_node_id']);
+}
+
+// Sort txs by creation time
+usort($txs, function($tx_a, $tx_b) {
+    return ($tx_a['creation'] < $tx_b['creation']) ? -1 : 1;
+});
+
+foreach ($txs as $tx) {
+    echo "{$tx['creation']},{$tx['received']},{$tx['confirmed']},{$tx['consensus']}\n";
+}

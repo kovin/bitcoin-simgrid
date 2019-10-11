@@ -14,36 +14,26 @@ from baseconverter import hexconv
 
 ActivityGenerationType = enum.Enum("ActivityGenerationType", ("trace", "model"))
 DistributionType = enum.Enum("DistributionType", ("uniform", "exponential"))
+SortType = enum.Enum("SortType", ("uniform", "byPeersCountAsc", "byPeersCountDesc"))
 
 parser = argparse.ArgumentParser(description = 'Create a platform xml for the bitcoin-simgrid project')
 parser.add_argument('--data_dir', type = str, help = 'the directory for the produced deployment xml and individual nodes data json files', required = True)
 parser.add_argument('--nodes_count', type = int, help = 'the number of nodes involved in the simulation', required = True)
 parser.add_argument('--peers_count', type = int, help = 'the number of peers each node will have', required = True)
 parser.add_argument('--activity_generation_type', type = str, action = "store", choices = tuple(t.name for t in ActivityGenerationType), default = ActivityGenerationType.model.name)
-parser.add_argument('--trace_dir', type = str, help = 'the directory for the produced deployment xml and individual nodes data json files', required = False)
+parser.add_argument('--trace_dir', type = str, help = 'the directory for the real blockchain trace information', required = False)
 parser.add_argument('--txs_per_day', type = int, help = 'number of expected total transactions in the system per day', required = False)
 parser.add_argument('--difficulty', type = int, help = 'the current network difficulty to mine a block', required = True)
 parser.add_argument('--global_hashrate', type = int, help = 'the current global network hashrate', required = False)
-parser.add_argument('--miners_ratio', type = int, help = 'a number between 0 an 100 for the ratio of miner in relation to nodes_count', required = False, default = 5)
+parser.add_argument('--miners_ratio', type = float, help = 'a number between 0 an 100 for the ratio of miner in relation to nodes_count', required = False, default = 5)
 parser.add_argument('--distribution_type', type = str, help = 'Whether to use a uniform or exponential distribution when assigning txs generation among nodes', action = "store", choices = tuple(t.name for t in DistributionType), default = DistributionType.uniform.name)
 parser.add_argument('--distribution_lambda', type = float, help = 'The lambda to assign txs generation among nodes following an exponential distribution', default = 1.0)
+parser.add_argument('--sort-type', type = str, help = 'This options allows you to assign more possibility of tx generation for nodes with: a) the most peers, b) the less peers, c) uniform (default)', action = "store", choices = tuple(t.name for t in SortType), default = SortType.uniform.name)
 parser.add_argument('--seed', type = int, help = 'Seed for the random number generator', required = False, default = 0)
+parser.add_argument('--without_supernodes', help = 'If present, the tool will avoid creating nodes with more peers than --peers_count', action='store_true')
 
 args = parser.parse_args()
 random.seed(args.seed)
-
-def create_ctg_data(trace_data):
-    ctg_data = {
-        'nodes_count': args.nodes_count,
-        'mode': args.activity_generation_type
-    }
-    if args.activity_generation_type == ActivityGenerationType.model.name:
-        ctg_data['distribution'] = get_ctg_model_data()
-    else:
-        ctg_data['trace'] = trace_data['txs']
-    ctg_data_file = open('%s/ctg_data' % args.data_dir , 'w')
-    json.dump(ctg_data, ctg_data_file)
-    ctg_data_file.close()
 
 def get_ctg_model_data():
     data = {
@@ -57,27 +47,30 @@ def get_ctg_model_data():
 def get_trace_data():
     if args.activity_generation_type == ActivityGenerationType.model.name:
         return None
+    txs_in_blocks_map = get_txs_in_blocks_map()
     raw_data = {'txs': [], 'blocks': []}
     earliest_tx = None
     blocks_dir = '%s/blocks' % args.trace_dir
     blocks_to_parse = [f for f in os.listdir(blocks_dir) if os.path.isfile(os.path.join(blocks_dir, f))]
-    for block in blocks_to_parse:
-        block_file_path = '%s/%s' % (blocks_dir, block)
+    for block_hash in blocks_to_parse:
+        block_file_path = '%s/%s' % (blocks_dir, block_hash)
         block_data = json.load(open(block_file_path))
-        earliest_tx, txs_broadcasted_in_block = add_txs_to_raw_data(block_data, raw_data, earliest_tx)
+        earliest_tx, txs_broadcasted_in_block, txs_total = add_txs_to_raw_data(block_data, raw_data, earliest_tx, txs_in_blocks_map[block_hash])
         raw_data['blocks'].append({
             'hash': block_data['hash'],
             'received': parse_date(block_data['received_time']),
             'difficulty': nbits_to_difficulty(block_data['bits']),
-            'n_tx_only_in_block': txs_broadcasted_in_block,
-            'n_tx': block_data['n_tx']
+            'txs_broadcasted_in_block': txs_broadcasted_in_block,
+            'n_tx': txs_total
         })
     data = {'txs': [], 'blocks': []}
     for tx in raw_data['txs']:
         data['txs'].append({
             'hash': tx['hash'],
             'received': (tx['received'] - earliest_tx).total_seconds(),
-            'confirmed': (tx['confirmed'] - earliest_tx).total_seconds()
+            'confirmed': (tx['confirmed'] - earliest_tx).total_seconds(),
+            'size': tx['size'],
+            'fee_per_byte': tx['fee_per_byte']
         })
     data['txs'] = sorted(data['txs'], key = lambda tx: tx['received'])
     for block in raw_data['blocks']:
@@ -86,32 +79,50 @@ def get_trace_data():
             'received': (block['received'] - earliest_tx).total_seconds(),
             'confirmed': (block['received'] - earliest_tx).total_seconds(),
             'difficulty': block['difficulty'],
-            'n_tx_only_in_block': block['n_tx_only_in_block'],
+            'txs_broadcasted_in_block': block['txs_broadcasted_in_block'],
             'n_tx': block['n_tx']
         })
     data['blocks'] = sorted(data['blocks'], key = lambda block: block['received'])
     data['difficulty'] = data['blocks'][0]['difficulty'] if len(data['blocks']) > 0 else 0
     return data
 
-def add_txs_to_raw_data(block_data, raw_data, earliest_tx):
-    txs_broadcasted_in_block = 0
+def get_txs_in_blocks_map():
+    txs_in_blocks_map = {}
+    txs_dir = '%s/txs' % args.trace_dir
+    txs_to_parse = [f for f in os.listdir(txs_dir) if os.path.isfile(os.path.join(txs_dir, f))]
+    for tx_hash in txs_to_parse:
+        tx_file_path = '%s/%s' % (txs_dir, tx_hash)
+        tx_data = json.load(open(tx_file_path))
+        block_hash = tx_data['block_hash']
+        if block_hash not in txs_in_blocks_map:
+            txs_in_blocks_map[block_hash] = []
+        txs_in_blocks_map[block_hash].append(tx_hash)
+    return txs_in_blocks_map
+
+def add_txs_to_raw_data(block_data, raw_data, earliest_tx, txs_hashes):
+    txs_broadcasted_in_block = []
+    txs_total = 0
     block_received_date = parse_date(block_data['received_time'])
-    for txid in block_data['txids']:
+    for txid in txs_hashes:
         tx_file_path = '%s/txs/%s' % (args.trace_dir, txid)
         tx_data = json.load(open(tx_file_path))
         received = parse_date(tx_data['received'])
         confirmed = parse_date(tx_data['confirmed'])
         if earliest_tx is None or received < earliest_tx:
             earliest_tx = received
+        txs_total = txs_total + 1
+        fee_per_byte = tx_data['fees'] / tx_data['size']
         if received == block_received_date:
-            txs_broadcasted_in_block = txs_broadcasted_in_block + 1
+            txs_broadcasted_in_block.append((tx_data['size'], fee_per_byte))
         else:
             raw_data['txs'].append({
                 'hash': txid,
                 'received': received,
-                'confirmed': confirmed
+                'confirmed': confirmed,
+                'size': tx_data['size'],
+                'fee_per_byte': fee_per_byte
             })
-    return earliest_tx, txs_broadcasted_in_block
+    return earliest_tx, txs_broadcasted_in_block, txs_total
 
 def nbits_to_difficulty(nbits):
     nbits = hexconv.from_decimal(nbits)
@@ -122,25 +133,33 @@ def nbits_to_difficulty(nbits):
     return hexconv.to_decimal(base_target) / hexconv.to_decimal(target)
 
 def parse_date(string_date):
-    try:
-        return datetime.datetime.strptime(string_date, '%Y-%m-%dT%H:%M:%S.%fZ')
-    except ValueError:
-        return datetime.datetime.strptime(string_date, '%Y-%m-%dT%H:%M:%SZ')
+    string_date = string_date.split('+')[0] # If the date is 2018-03-24T15:36:23+00:00 it becomes 2018-03-24T15:36:23
+    for fmt in ['%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%dT%H:%M:%SZ', '%Y-%m-%dT%H:%M:%S.%f', '%Y-%m-%dT%H:%M:%S']:
+        try:
+            return datetime.datetime.strptime(string_date, fmt)
+        except ValueError:
+            pass
+    raise Exception('could not parse date %s' % string_date)
 
 def create_nodes(root, trace_data, difficulty):
     node_types = ['miner' if random.random() * 100 < args.miners_ratio else 'node' for x in range(0, args.nodes_count)]
     miners_count = sum([1 if node_type == 'miner' else 0 for node_type in node_types])
     miner_id = 0
-    #G = nx.connected_watts_strogatz_graph(args.nodes_count, args.peers_count, .2, tries=100, seed=args.seed)
-    #G = nx.barabasi_albert_graph(args.nodes_count, args.peers_count, seed=args.seed)
-    G = nx.powerlaw_cluster_graph(args.nodes_count, args.peers_count, .6, seed=args.seed)
+    if args.without_supernodes:
+        G = nx.connected_watts_strogatz_graph(args.nodes_count, args.peers_count, .2, tries=100, seed=args.seed)
+    else:
+        G = nx.powerlaw_cluster_graph(args.nodes_count, args.peers_count, .6, seed=args.seed)
     for node_id in G.nodes():
         node = et.Element('actor')
         node.set('host', 'node-' + str(node_id))
         peers = [peer_id for peer_id in list(G.adj[node_id])]
         node_data = {
             'peers': map(int, peers),
-            'difficulty': difficulty
+            'difficulty': difficulty,
+            'mode': args.activity_generation_type,
+            'creates_txs': True,
+            'txs_trace': [],
+            'blocks_trace': []
         }
         node_type = node_types[node_id]
         if node_type == 'miner':
@@ -161,6 +180,48 @@ def create_nodes(root, trace_data, difficulty):
         node_data_file = open('%s/%s_data-%s' % (args.data_dir, node_type, node_id) , 'w')
         json.dump(node_data, node_data_file)
         node_data_file.close()
+    return G
+
+def create_ctg_data(trace_data, graph):
+    def sort_nodes(x, y):
+        peersCountX = len(graph.adj[x])
+        peersCountY = len(graph.adj[y])
+        if args.sort_type == SortType.byPeersCountDesc.name:
+            return peersCountY - peersCountX
+        elif args.sort_type == SortType.byPeersCountAsc.name:
+            return peersCountX - peersCountY
+        else:
+            return 0
+    ctg_data = {
+        'nodes': sorted(graph.nodes(), key=cmp_to_key(sort_nodes)),
+        'mode': args.activity_generation_type
+    }
+    if args.activity_generation_type == ActivityGenerationType.model.name:
+        ctg_data['distribution'] = get_ctg_model_data()
+    else:
+        ctg_data['trace'] = trace_data['txs']
+    ctg_data_file = open('%s/ctg_data' % args.data_dir , 'w')
+    json.dump(ctg_data, ctg_data_file)
+    ctg_data_file.close()
+
+def cmp_to_key(mycmp):
+    'Convert a cmp= function into a key= function'
+    class K(object):
+        def __init__(self, obj, *args):
+            self.obj = obj
+        def __lt__(self, other):
+            return mycmp(self.obj, other.obj) < 0
+        def __gt__(self, other):
+            return mycmp(self.obj, other.obj) > 0
+        def __eq__(self, other):
+            return mycmp(self.obj, other.obj) == 0
+        def __le__(self, other):
+            return mycmp(self.obj, other.obj) <= 0
+        def __ge__(self, other):
+            return mycmp(self.obj, other.obj) >= 0
+        def __ne__(self, other):
+            return mycmp(self.obj, other.obj) != 0
+    return K
 
 def create_directory():
     shutil.rmtree(args.data_dir, True)
@@ -172,8 +233,8 @@ def create():
     create_directory()
     trace_data = get_trace_data()
     difficulty = args.difficulty if args.activity_generation_type == ActivityGenerationType.model.name else trace_data['difficulty']
-    create_ctg_data(trace_data)
-    create_nodes(root, trace_data, difficulty)
+    graph = create_nodes(root, trace_data, difficulty)
+    create_ctg_data(trace_data, graph)
     tree = et.ElementTree(root)
     tree.docinfo.system_url = 'http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd'
     tree.write(args.data_dir + '/deployment.xml', xml_declaration = True, encoding = "utf-8")

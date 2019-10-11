@@ -1,0 +1,62 @@
+{
+  "block_hash": "000000000000000000173a10f6052c1cce3a331f3c22a1125b2835d710914924",
+  "block_height": 514977,
+  "block_index": 379,
+  "hash": "7b1b991423a704b0858cd58ee26a4e1249ec55dc9085db5c9ad889592d38420c",
+  "addresses": [
+    "16ARuebjAfn8Vj6zEa3pbAW4Nr2whQwCG7",
+    "3AgHGy7Emswh92aXPcARrrzgNGvkLz8juh"
+  ],
+  "total": 379005,
+  "fees": 1944,
+  "size": 152,
+  "preference": "medium",
+  "confirmed": "2018-03-24T16:03:25Z",
+  "received": "2018-03-24T16:03:25Z",
+  "ver": 1,
+  "double_spend": false,
+  "vin_sz": 1,
+  "vout_sz": 2,
+  "confirmations": 7697,
+  "confidence": 1,
+  "inputs": [
+    {
+      "prev_hash": "665ae957aaaefe15cd2b24f208029ec04131c8ef652b8bf94a612150b4542c60",
+      "output_index": 1,
+      "script": "22002052c599aeebdd5e0736ac23313da9f909632bf55d18c70ad648755ba4c43bc55a",
+      "output_value": 380949,
+      "sequence": 4294967295,
+      "addresses": [
+        "3AgHGy7Emswh92aXPcARrrzgNGvkLz8juh"
+      ],
+      "script_type": "pay-to-script-hash",
+      "age": 514962,
+      "witness": [
+        "",
+        "3045022100c917e33f55bf45f5a4bd9ffe4ce86313a7ee0b144a0a6962f2505383019e22b8022021b1311c28e8591b1a3263b4d418afca2b4526458976428dad306c21b52d325e01",
+        "3045022100a8126a964286ba8714baf24e2bfbd29a08177cd7fed7f5373d8b1ef2b991d47e02203268bccbba8328cd87f1a762fdd22d93ae0162e829be6c069fafdb04d5cadb3b01",
+        "522102eccf702fc06ea029ae79cb560ab78cf1d5cb368ec091942b2666c67cc07d988a2102320f6e7e8f8451c4b91e9ac6b716b86ace6e3f74ddfe0a135f1105d7ec2a507752ae"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "value": 50000,
+      "script": "76a91438a12a1ca6c409e828d0979e4821506884f80f6088ac",
+      "spent_by": "864300ec03040cb50d3aa139313890891bff3ef308d721c2aeead72ea18cedb9",
+      "addresses": [
+        "16ARuebjAfn8Vj6zEa3pbAW4Nr2whQwCG7"
+      ],
+      "script_type": "pay-to-pubkey-hash"
+    },
+    {
+      "value": 329005,
+      "script": "a9146295880affb6fb3b889172f58a317ab0463da0ab87",
+      "spent_by": "7b4b5aef10c71db2e09a9749a75eba9974fa31712c76b5e5fcb74d1f7415b72f",
+      "addresses": [
+        "3AgHGy7Emswh92aXPcARrrzgNGvkLz8juh"
+      ],
+      "script_type": "pay-to-script-hash"
+    }
+  ]
+}

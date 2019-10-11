@@ -1,0 +1,55 @@
+{
+  "block_hash": "000000000000000000173a10f6052c1cce3a331f3c22a1125b2835d710914924",
+  "block_height": 514977,
+  "block_index": 7,
+  "hash": "237c1a003fe7fae94b5614f6ecad547348c817c599226d8072dda0008218bf13",
+  "addresses": [
+    "3LuWMeyLeB3XLPQQi5PGPvFVqrz5omU3c1"
+  ],
+  "total": 49080000,
+  "fees": 90000,
+  "size": 126,
+  "preference": "high",
+  "confirmed": "2018-03-24T16:03:25Z",
+  "received": "2018-03-24T16:03:25Z",
+  "ver": 1,
+  "double_spend": false,
+  "vin_sz": 1,
+  "vout_sz": 2,
+  "confirmations": 7667,
+  "confidence": 1,
+  "inputs": [
+    {
+      "prev_hash": "33aa5dd4509d7f00c4405d9062ab68520723a5e1308b70f9450e586657816236",
+      "output_index": 3,
+      "output_value": 49170000,
+      "sequence": 4294967295,
+      "script_type": "pay-to-witness-script-hash",
+      "age": 514976,
+      "witness": [
+        "",
+        "3044022040d2b968439552ed9aec73ebb988ca3d8c29a39a4ff3eb0d24554c74415c2d9702207080a2bfb5ae683424bf5581dadcddc10afa847af83ed9e8a72a3ef65f12c0b601",
+        "30440220345373832495561c98bc37b65b41d5270d5b0f9a6e2ea1a876d748b4a2f4a3e4022031b4be147f53ebd004c697464474c201c3315471d6479da0ccda45a7a6fd17d501",
+        "52210375e00eb72e29da82b89367947f29ef34afb75e8654f6ea368e0acdfd92976b7c2103a1b26313f430c4b15bb1fdce663207659d8cac749a0e53d70eff01874496feff2103c96d495bfdd5ba4145e3e046fee45e84a8a48ad05bd8dbb395c011a32cf9f88053ae"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "value": 30000000,
+      "script": "a914d2c71db70462cd61d62fd234f73e29e2b71718bf87",
+      "spent_by": "df8548010e4b6ecb1d6e0916804002db0233594fc13a810480a4d34c1cd940a7",
+      "addresses": [
+        "3LuWMeyLeB3XLPQQi5PGPvFVqrz5omU3c1"
+      ],
+      "script_type": "pay-to-script-hash"
+    },
+    {
+      "value": 19080000,
+      "script": "0020701a8d401c84fb13e6baf169d59684e17abd9fa216c8cc5b9fc63d622ff8c58d",
+      "spent_by": "917eed98f5b3bb68e72f0406c9d112532b51eba09282fb3728f161c2eda4e07d",
+      "addresses": null,
+      "script_type": "pay-to-witness-script-hash"
+    }
+  ]
+}
