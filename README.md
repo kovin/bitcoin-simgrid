@@ -20,7 +20,7 @@ simgrid$ sudo make install
 ## Clone
 ```bash
 $ cd ~
-$ git clone git@gitlab.licar.exp.dc.uba.ar:licar/bitcoin-simgrid.git
+$ git clone https://github.com/kovin/bitcoin-simgrid.git
 $ cd bitcoin-simgrid
 ```
 
